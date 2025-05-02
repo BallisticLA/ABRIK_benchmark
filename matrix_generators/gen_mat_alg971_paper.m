@@ -22,7 +22,7 @@ function[] = gen_mat_alg971_paper(folder_name, m, n, low_rank, plotting_interval
         Sigma(4, :) = gen_mat_4(n, low_rank);
         Sigma(5, :) = gen_mat_5(n, low_rank);
         Sigma(6, :) = sort(abs(randn(1, n)),'descend');
-   
+   %{
         for i = 1:size(Sigma, 1)
             ABRIK_test_mat_file = "ABRIK_test_mat" + int2str(i) + ".txt";
             A_lowrank_mat_file = "A_lowrank_mat" + int2str(i) + ".txt";
@@ -40,6 +40,7 @@ function[] = gen_mat_alg971_paper(folder_name, m, n, low_rank, plotting_interval
             writematrix(Sigma(i, :),                                                       file_path + Spectrum_mat_file ,'delimiter',' ');
             fprintf("Matrix " + int2str(i) + " processed\n");
         end
+   %}
     elseif operation_mode == "plot"
         Sigma = zeros(6, n);
         for i = 1:6

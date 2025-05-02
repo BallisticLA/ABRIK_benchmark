@@ -17,28 +17,27 @@ function[] = buf()
 
     filename = "../benchmark_output_abrik_paper/Zen4c/dense/_ABRIK_speed_comparisons_num_info_lines_6.txt";
     Data_in = readfile(filename, 6);
-
-    fig = tiledlayout(6, 4,"TileSpacing","tight");
     
     % We have a total of 6 synthetic test matrices.
     plot_position = 1;
     for i = 1:6
+        figure
+        tiledlayout(1, 4,"TileSpacing","tight");
         % Plots ABRIK digits of accuracy vs #matmuls.
         nexttile
-        plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "num_matmuls", 1, 1, plot_position);
+        plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "num_matmuls", 1, 1, 1);
         plot_position = plot_position + 1;
         % Plots ABRIK digits of accuracy vs speedup over SVD.
         nexttile
-        plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "speedup_over_svd", 1, 1, plot_position);
+        plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "speedup_over_svd", 1, 1, 2);
         plot_position = plot_position + 1;
         % Plots RSVD digits of accuracy vs speedup over SVD.
         nexttile
-        plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), num_iters, num_b_sizes, num_krylov_iters, 9, err_type, "speedup_over_svd", 1, 1, plot_position);
+        plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), num_iters, num_b_sizes, num_krylov_iters, 9, err_type, "speedup_over_svd", 1, 1, 3);
         plot_position = plot_position + 1;
         % Plots SVDS digits of accuracy vs speedup over SVD.
         nexttile
-        plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), num_iters, num_b_sizes, num_krylov_iters, 12, err_type, "speedup_over_svd", 1, 1, plot_position);
-        plot_position = plot_position + 1;
+        plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), num_iters, num_b_sizes, num_krylov_iters, 12, err_type, "speedup_over_svd", 1, 1, 4);
     end
 end
 
@@ -124,6 +123,7 @@ function[] = plot_2d(Data, num_iters, num_b_sizes, num_krylov_iters, alg_column_
             case 12
                 %xlim([0 180]);
         end
+        xlim([0 100]);
     end
 
     grid on
@@ -131,7 +131,7 @@ function[] = plot_2d(Data, num_iters, num_b_sizes, num_krylov_iters, alg_column_
     ax = gca;
     ax.XAxis.FontSize = 20;
     ax.YAxis.FontSize = 20;
-    ylim([0 16]);
+    ylim([-1 16]);
     yticks([0,  1, 5, 10, 15]);
 end
 
