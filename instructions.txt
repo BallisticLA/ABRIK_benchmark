@@ -1,28 +1,36 @@
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat1.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat1.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+numactl --interleave=all env OMP_NUM_THREADS=448 ./ABRIK_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat1.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat1.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
 
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat2.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat2.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+numactl --interleave=all env OMP_NUM_THREADS=448 ./ABRIK_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat2.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat2.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
 
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat3.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat3.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+numactl --interleave=all env OMP_NUM_THREADS=448 ./ABRIK_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat3.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat3.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
 
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat4.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat4.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+numactl --interleave=all env OMP_NUM_THREADS=448 ./ABRIK_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat4.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat4.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
 
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat5.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat5.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+numactl --interleave=all env OMP_NUM_THREADS=448 ./ABRIK_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat5.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat5.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
 
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat6.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat6.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
-
-
+numactl --interleave=all env OMP_NUM_THREADS=448 ./ABRIK_speed_comparisons /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/dense/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/ABRIK_test_mat6.txt /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/test_mat_10k_rank_2k/A_lowrank_mat6.txt 2 10000 10000 10 6 5 4 8 16 32 64 128 2 4 8 16 32
 
 
 
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_0/CurlCurl_0.mtx 2 10 6 5 4 8 16 32 64 128 2 4 8 16 32
 
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_1/CurlCurl_1.mtx 2 10 6 5 4 8 16 32 64 128 2 4 8 16 32
 
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_2/CurlCurl_2.mtx 2 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/SapphireRapids/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_0/CurlCurl_0.mtx 2 10 6 5 4 8 16 32 64 128 2 4 8 16 32
 
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_3/CurlCurl_3.mtx 2 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/SapphireRapids/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_1/CurlCurl_1.mtx 2 10 6 5 4 8 16 32 64 128 2 4 8 16 32
 
-numactl --interleave=all env OMP_NUM_THREADS=448 ./RBKI_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/Zen4c/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_4/CurlCurl_4.mtx 2 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/SapphireRapids/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_2/CurlCurl_2.mtx 2 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+
+numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/SapphireRapids/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_3/CurlCurl_3.mtx 2 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+
+numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/SapphireRapids/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_4/CurlCurl_4.mtx 2 10 6 5 4 8 16 32 64 128 2 4 8 16 32
+
+
+
+
+numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/SapphireRapids/sparse/2025_05_06_more /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_0/CurlCurl_0.mtx 2 10 4 4 128 256 512 1024 16 32 64 128
+
+numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/SapphireRapids/sparse/2025_05_06_more /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_4/CurlCurl_4.mtx 2 10 5 5 128 256 512 1024 2048 16 32 64 128 256
+
 
 
 
