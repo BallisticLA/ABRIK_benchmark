@@ -1,7 +1,0 @@
-Description: Results from the saprse ABRIK runtime breakdown benchmark, recording the time it takes to perform every subroutine in ABRIK.
-File format: 13 data columns, each corresponding to a given ABRIK subroutine: allocation_t_dur, get_factors_t_dur, ungqr_t_dur, reorth_t_dur, qr_t_dur, gemm_A_t_dur, main_loop_t_dur, sketching_t_dur, r_cpy_t_dur, s_cpy_t_dur, norm_t_dur, t_rest, total_t_dur               rows correspond to ABRIK runs with block sizes varying as specified, with numruns repititions of each block size
-Input type:/lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_4/CurlCurl_4.mtx
-Input size:2380515 by 2380515
-Additional parameters: Krylov block sizes 64,  matmuls: 128,  num runs per size 2 num singular values and vectors approximated 10
-128, 64, 3193342, 56393636, 152591759, 108349213, 19827553, 26783819, 373501363, 601148, 29794, 717, 259511, 67244602, 435275094, 
-128, 64, 2535360, 55922524, 152899892, 108329442, 19575166, 26844809, 375929966, 598230, 14556, 682, 263146, 69595471, 436579278, 

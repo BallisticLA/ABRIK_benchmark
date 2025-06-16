@@ -1,4 +1,4 @@
-function[] = ABRIK_runtime_breakdown()
+function[] = abrik_runtime_breakdown()
     
     % The first two entries in the dataset are: num_krylov_iters, b_sz
     filename = "../benchmark_output_abrik_paper/SapphireRapids/sparse/_ABRIK_runtime_breakdown_sparse_num_info_lines_6.txt";
