@@ -83,12 +83,15 @@ function[] = plot(Sigma, n, plotting_interval, file_path)
     semilogy(x, Sigma(6, 1:plotting_interval:end), marker_array{6}, MarkerSize=18, LineWidth=1.8)
     
     grid on
-    xlabel('k', 'FontSize', 20);
-    ylabel('sigma[k]', 'FontSize', 20);
-    lgd = legend('Mat 1', 'Mat 2', 'Mat 3', 'Mat 4', 'Mat 5', 'Mat 6');
+    %xlabel('k', 'FontSize', 20);
+    %ylabel('sigma[k]', 'FontSize', 20);
+    lgd = legend('Mat 1', 'Mat 2', 'Mat 3', 'Mat 4', 'Mat 5', 'Mat 6', 'NumColumns', 2);
     lgd.FontSize = 20;
+    legend('Location','northeastoutside');
+    ax = gca;
     ax.XAxis.FontSize = 20;
     ax.YAxis.FontSize = 20;
+    xticks([0 2000 4000 6000 8000 10000]);
 
     saveas(gcf, file_path + 'generated_matrices_spectra_plots.fig')
 end
