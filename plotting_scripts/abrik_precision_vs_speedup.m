@@ -20,7 +20,6 @@ function[] = abrik_precision_vs_speedup(filename, rows, cols, num_b_sizes, num_k
     % Plots ABRIK digits of accuracy vs number of singular triplets estimated.
     nexttile
     plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "num_triplets", plot_all_b_sz, show_lables, 1);
-    %{
     plot_position = plot_position + 1;
     % Plots RSVD digits of accuracy vs Inner Dimension of Q, B.
     nexttile
@@ -42,7 +41,6 @@ function[] = abrik_precision_vs_speedup(filename, rows, cols, num_b_sizes, num_k
     % Plots SVDS digits of accuracy vs speedup over SVD.
     nexttile
     plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 12, err_type, "gflops", plot_all_b_sz, show_lables, 6);
-    %}
 end
 
 % alg_column_idx is 6, 9 or 12 - signifies which alg we will be comparing against
@@ -56,16 +54,11 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
     % iterations out of num_iters.
     % Additionally, since we only run SVD once, populate the set with SVD
     % results.
-    Data = data_preprocessing_best(Data, num_b_sizes, num_krylov_iters, num_iters)
+    Data = data_preprocessing_best(Data, num_b_sizes, num_krylov_iters, num_iters);
 
     svd_gflop = 4 * rows^2 * cols + 22 * cols^3 / 10^9;
 
     ctr = 1;
-    lgd_ctr = 1;
-
-    % These will be used to control the x-axis limits;
-    %curr_min = realmax('double');
-    %curr_max = 0.0;
 
     if alg_column_idx == 12
         % SVDS does not have a notion of block size, yet we use the
@@ -79,27 +72,52 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
         
         % Below will have a bunch of non-unique values representing the numbers
         % of singular triplets found.
-        Data_SVDS = [Data(:, 1) .* Data(:, 2) ./2, Data(:, 10), Data(:, 12)];
+        Data_SVDS = [Data(:, 1), Data(:, 1) .* Data(:, 2) ./2, Data(:, 10), Data(:, 12)];
         
         % Keep the first occurrence of each unique value in column 1
-        [~, ia, ~] = unique(Data_SVDS(:,1), 'first');
+        [~, Data_SVDS_unique_idx, ~] = unique(Data_SVDS(:,2), 'first');
         % Extract those rows
-        Data_SVDS = Data_SVDS(sort(ia), :);
-    
-        % Y-axis vector
-        error_vector = log10(1 ./ Data_SVDS(:, 2));
+        Data_SVDS = Data_SVDS(sort(Data_SVDS_unique_idx), :);
+        % Block sizes in column one will not be unique because there is a
+        % smaller set of block sizes than the number of singular triplets.
+        original_len = size(Data_SVDS, 1);           % Original number of rows
+        unique_vals = unique(Data_SVDS(:, 1));       % Unique values
+        padded_vals = [unique_vals; zeros(original_len - numel(unique_vals), 1)];  % Pad with zeros
+        
+        Data_SVDS(:, 1) = padded_vals;
 
+        % Y-axis vector
+        error_vector = log10(1 ./ Data_SVDS(:, 3));
+
+        % Since the SVDS subplot plot occupies the least amount of space, we will
+        % place the legend here.
+        % For that, we will have to mimic plotting the rest of the data.
+        if plot_mode == "num_triplets"
+            for i = 1:num_b_sizes
+                if plot_mode == "gflops"
+                    semilogy(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
+                elseif plot_mode == "num_triplets"
+                    loglog(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
+                end
+                hold on
+                legend_entries{i} = ['b_{sz}=', num2str(Data_SVDS(i, 1))]; %#ok<AGROW>
+            end
+        end
+
+        % Plot SVDS.
         if plot_mode == "gflops"
-            x_axis_vector = (svd_gflop ./ Data_SVDS(:, 3)) ./ 10^6;
+            x_axis_vector = (svd_gflop ./ Data_SVDS(:, 4)) ./ 10^6;
             semilogy(x_axis_vector, error_vector, '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
         elseif plot_mode == "num_triplets"
-            x_axis_vector = Data_SVDS(:, 1);
+            x_axis_vector = Data_SVDS(:, 2);
             loglog(x_axis_vector, error_vector, '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
         end
 
-        %curr_min = min(curr_min, min(x_axis_vector));
-        %curr_max = max(curr_max, max(x_axis_vector));
-
+        % Add an SVDS legend entry.
+        if plot_mode == "num_triplets"
+            legend_entries{i+1} = 'SVDS'; %#ok<AGROW>
+            lgd = legend(legend_entries, 'Location', 'southeast');
+        end
     else
         for i = 1:num_krylov_iters:size(Data, 1)
             % Speedup over SVD for all krylov iterations using a given block
@@ -123,31 +141,28 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
             % scientific notation error.
             error_vector = log10(1 ./ Data(i:(i+num_krylov_iters-1), alg_column_idx - err_type));
             
+            % We want to disregard all results that achieved below one
+            % digit of accuracy.
+            valid_idx = error_vector >= 1;
+            error_vector = error_vector(valid_idx);
+            x_axis_vector = x_axis_vector(valid_idx);
+            if isempty(error_vector)
+                error_vector = nan;
+                x_axis_vector = nan;
+            end
+
             % If "plot_all_b_sz" parameter is set to 0, we shall only plot
             % the results for every other block size.
-
-            Data(i:(i+num_krylov_iters-1), alg_column_idx - err_type)
-            x_axis_vector
-            error_vector
-
             if (mod(ctr, 2) ~= 0 || plot_all_b_sz)
                 if plot_mode == "num_triplets"
                     loglog(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
                 elseif plot_mode == "gflops"
                     semilogy(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
                 end
-                legend_entries{lgd_ctr} = ['b_{sz}=', num2str(Data(i, 1))]; %#ok<AGROW>
                 hold on
-                lgd_ctr = lgd_ctr + 1;
             end
             ctr = ctr + 1;
-
-            break
         end
-    
-        % We need to add a legend entry for SVDS
-        plot(nan, nan, '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
-        legend_entries{lgd_ctr} = 'SVDS'; %#ok<AGROW>
     end
 
     % Additional labels info control.
@@ -178,21 +193,9 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
         case 12
             set(gca,'Yticklabel',[])
     end
-
-    % Legend control.
-    if plot_position == 1
-        lgd = legend(legend_entries, 'Location', 'southeast');
-    end
     
     % X-axis control.
-    if plot_mode == "num_matmuls"
-        % Flip the order of rows in the data matrix so that the
-        % matmuls-based subplot matches the speedup-based subplots
-        % (best accuracy on the left, worst on the right). 
-        set(gca, 'XDir', 'reverse');
-
-        xticks(Data(1:num_krylov_iters, 2));
-    elseif plot_mode == "num_triplets"
+    if plot_mode == "num_triplets"
         % Flip the order of rows in the data matrix so that the
         % matmuls-based subplot matches the speedup-based subplots
         % (best accuracy on the left, worst on the right). 
@@ -204,8 +207,12 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
         all_tics = unique(Data(:, 2) .* Data(:, 1) ./2);
         odd_tics = all_tics(1:2:end);
         xticks(odd_tics);
+
+        xlim([min(odd_tics) max(odd_tics)]);
     elseif plot_mode == "gflops"
-        %xlim([0 curr_max]);
+        % Set jist the lower limit in the x-axis.
+        curr_lim = xlim;
+        xlim([0, curr_lim(2)]);
     end
 
     grid on
@@ -213,7 +220,7 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
     ax = gca;
     ax.XAxis.FontSize = 20;
     ax.YAxis.FontSize = 20;
-    ylim([0.5 16]);
+    ylim([1 16]);
     yticks([0,  1, 5, 10, 15]);
 end
 
