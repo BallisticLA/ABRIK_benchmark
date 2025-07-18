@@ -13,39 +13,33 @@ function[] = abrik_precision_vs_speedup(filename, rows, cols, num_b_sizes, num_k
     Data_in = readfile(filename, 6);
     
     % We have a total of 6 synthetic test matrices.
-    plot_position = 1;
     i = test_matrix_number;
-    tiledlayout(2, 3,"TileSpacing","tight");
+    tiledlayout(2, 3,"TileSpacing","loose");
 
     % Plots ABRIK digits of accuracy vs number of singular triplets estimated.
     nexttile
-    plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "num_triplets", plot_all_b_sz, show_lables, 1);
-    plot_position = plot_position + 1;
+    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "num_triplets", plot_all_b_sz, show_lables);
     % Plots RSVD digits of accuracy vs Inner Dimension of Q, B.
     nexttile
-    plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 9, err_type, "num_triplets", plot_all_b_sz, show_lables, 2);
-    plot_position = plot_position + 1;
+    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 9, err_type, "num_triplets", plot_all_b_sz, show_lables);
     % Plots SVDS digits of accuracy vs Number of singular triplets we're hunting for.
     nexttile
-    plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 12, err_type, "num_triplets", plot_all_b_sz, show_lables, 3);
-    plot_position = plot_position + 1;
+    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 12, err_type, "num_triplets", plot_all_b_sz, show_lables);
 
     % Plots ABRIK digits of accuracy vs speedup over SVD.
     nexttile
-    plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "gflops", plot_all_b_sz, show_lables, 4);
-    plot_position = plot_position + 1;
+    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "gflops", plot_all_b_sz, show_lables);
     % Plots RSVD digits of accuracy vs speedup over SVD.
     nexttile
-    plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 9, err_type, "gflops", plot_all_b_sz, show_lables, 5);
-    plot_position = plot_position + 1;
+    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 9, err_type, "gflops", plot_all_b_sz, show_lables);
     % Plots SVDS digits of accuracy vs speedup over SVD.
     nexttile
-    plot_2d(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 12, err_type, "gflops", plot_all_b_sz, show_lables, 6);
+    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 12, err_type, "gflops", plot_all_b_sz, show_lables);
 end
 
 % alg_column_idx is 6, 9 or 12 - signifies which alg we will be comparing against
 % SVD.
-function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters, alg_column_idx, err_type, plot_mode, plot_all_b_sz, show_lables, plot_position)
+function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters, alg_column_idx, err_type, plot_mode, plot_all_b_sz, show_lables)
 
     legend_entries = [];
     marker_array = {'-o', '-diamond' '-s', '-^', '-v', '-+', '-*', '-s'};
@@ -57,8 +51,8 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
     Data = data_preprocessing_best(Data, num_b_sizes, num_krylov_iters, num_iters);
 
     svd_gflop = 4 * rows^2 * cols + 22 * cols^3 / 10^9;
-
     ctr = 1;
+    all_tics = unique(Data(:, 2) .* Data(:, 1) ./2);
 
     if alg_column_idx == 12
         % SVDS does not have a notion of block size, yet we use the
@@ -83,11 +77,20 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
         original_len = size(Data_SVDS, 1);           % Original number of rows
         unique_vals = unique(Data_SVDS(:, 1));       % Unique values
         padded_vals = [unique_vals; zeros(original_len - numel(unique_vals), 1)];  % Pad with zeros
-        
         Data_SVDS(:, 1) = padded_vals;
 
         % Y-axis vector
-        error_vector = log10(1 ./ Data_SVDS(:, 3));
+        Data_SVDS(:, 3) = log10(1 ./ Data_SVDS(:, 3));
+
+        % We want to disregard all results that achieved below one
+        % digit of accuracy.
+        %{
+        valid_idx = Data_SVDS(:,3) >= 1;
+        Data_SVDS = Data_SVDS(valid_idx, :);
+        if isempty(Data_SVDS)
+            Data_SVDS = nan(1, 4);  
+        end
+        %}
 
         % Since the SVDS subplot plot occupies the least amount of space, we will
         % place the legend here.
@@ -95,9 +98,9 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
         if plot_mode == "num_triplets"
             for i = 1:num_b_sizes
                 if plot_mode == "gflops"
-                    semilogy(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
+                    plot(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
                 elseif plot_mode == "num_triplets"
-                    loglog(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
+                    semilogx(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
                 end
                 hold on
                 legend_entries{i} = ['b_{sz}=', num2str(Data_SVDS(i, 1))]; %#ok<AGROW>
@@ -106,17 +109,16 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
 
         % Plot SVDS.
         if plot_mode == "gflops"
-            x_axis_vector = (svd_gflop ./ Data_SVDS(:, 4)) ./ 10^6;
-            semilogy(x_axis_vector, error_vector, '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
+            Data_SVDS(:, 4) = (svd_gflop ./ Data_SVDS(:, 4)) ./ 10^6;
+            semilogy(Data_SVDS(:, 4), Data_SVDS(:, 3), '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
         elseif plot_mode == "num_triplets"
-            x_axis_vector = Data_SVDS(:, 2);
-            loglog(x_axis_vector, error_vector, '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
+            loglog(Data_SVDS(:, 2), Data_SVDS(:, 3), '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
         end
 
         % Add an SVDS legend entry.
         if plot_mode == "num_triplets"
             legend_entries{i+1} = 'SVDS'; %#ok<AGROW>
-            lgd = legend(legend_entries, 'Location', 'southeast');
+            lgd = legend(legend_entries, 'Location', 'southwest');
         end
     else
         for i = 1:num_krylov_iters:size(Data, 1)
@@ -143,6 +145,7 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
             
             % We want to disregard all results that achieved below one
             % digit of accuracy.
+            %{
             valid_idx = error_vector >= 1;
             error_vector = error_vector(valid_idx);
             x_axis_vector = x_axis_vector(valid_idx);
@@ -150,14 +153,15 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
                 error_vector = nan;
                 x_axis_vector = nan;
             end
+            %}
 
             % If "plot_all_b_sz" parameter is set to 0, we shall only plot
             % the results for every other block size.
             if (mod(ctr, 2) ~= 0 || plot_all_b_sz)
                 if plot_mode == "num_triplets"
-                    loglog(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
+                    semilogx(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
                 elseif plot_mode == "gflops"
-                    semilogy(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
+                    plot(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
                 end
                 hold on
             end
@@ -204,11 +208,11 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
         % The number of estimated singular triplets would be repeating for
         % different combinations of block sizes and numbers of matmuls,
         % hence I'm using "unique()" function to remove repetitions.
-        all_tics = unique(Data(:, 2) .* Data(:, 1) ./2);
+        %all_tics = unique(Data(:, 2) .* Data(:, 1) ./2);
         odd_tics = all_tics(1:2:end);
         xticks(odd_tics);
 
-        xlim([min(odd_tics) max(odd_tics)]);
+        xlim([min(odd_tics) max(all_tics)]);
     elseif plot_mode == "gflops"
         % Set jist the lower limit in the x-axis.
         curr_lim = xlim;
@@ -216,11 +220,11 @@ function[] = plot_2d(Data, rows, cols, num_iters, num_b_sizes, num_krylov_iters,
     end
 
     grid on
-    lgd.FontSize = 20;
+    lgd.FontSize = 15;
     ax = gca;
     ax.XAxis.FontSize = 20;
     ax.YAxis.FontSize = 20;
-    ylim([1 16]);
+    ylim([-3 16]);
     yticks([0,  1, 5, 10, 15]);
 end
 
