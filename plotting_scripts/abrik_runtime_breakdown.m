@@ -26,7 +26,7 @@ function[] = process_and_plot(Data_in, num_iters, num_b_sizes, num_matmuls, show
     for j = 1 : num_matmuls
         Data_out(j, 1) = 100 * Data_in(j, 3)                     /Data_in(j, 15); %#ok<AGROW> % Preallocation
         Data_out(j, 2) = 100 * Data_in(j, 4)                     /Data_in(j, 15); %#ok<AGROW> % SVD factors
-        Data_out(j, 3) = 100 * Data_in(j, 5)                     /Data_in(j, 15); %#ok<AGROW> % UNGQR()
+        Data_out(j, 3) = 100 * Data_in(j, 5)                     /Data_in(j, 15); %#ok<AGROW> % ORGQR()
         Data_out(j, 4) = 100 * Data_in(j, 6)                     /Data_in(j, 15); %#ok<AGROW> % Reorth
         Data_out(j, 5) = 100 * Data_in(j, 7)                     /Data_in(j, 15); %#ok<AGROW> % QR
         Data_out(j, 6) = 100 * Data_in(j, 8)                     /Data_in(j, 15); %#ok<AGROW> % GEMM(A)
@@ -64,7 +64,7 @@ function[] = process_and_plot(Data_in, num_iters, num_b_sizes, num_matmuls, show
 
     if plot_position == num_matrices_to_process
         set(gca,'Yticklabel',[])
-        lgd = legend('Data Alloc','SVD+Factors', 'UNGQR', 'Reorth', 'QR', 'GEMM(M)', 'Other');
+        lgd = legend('Data Alloc','SVD+Factors', 'ORGQR', 'Reorth', 'QR', 'GEMM(M)', 'Other');
         legend('Location','northeastoutside'); 
     end
 

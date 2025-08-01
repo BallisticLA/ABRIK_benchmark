@@ -12,15 +12,18 @@ function[] = abrik_precision_vs_speedup_sparse(filename, num_b_sizes, num_krylov
     
     switch test_matrix_number
         case 1
+            rows = 11083;	
+            cols = 11083;
+        case 2
             rows = 226451;	
             cols = 226451;
-        case 2
+        case 3
             rows = 806529;	
             cols = 806529;
-        case 3
+        case 4
             rows = 1219574;	
             cols = 1219574;
-        case 4
+        case 5
             rows = 2380515;	
             cols = 2380515;
     end
@@ -91,13 +94,13 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
 
         % We want to disregard all results that achieved below one
         % digit of accuracy.
-        %{
+        
         valid_idx = Data_SVDS(:,3) >= 1;
         Data_SVDS = Data_SVDS(valid_idx, :);
         if isempty(Data_SVDS)
             Data_SVDS = nan(1, 4);  
         end
-        %}
+        
 
         % Since the SVDS subplot plot occupies the least amount of space, we will
         % place the legend here.
@@ -145,7 +148,7 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
             
             % We want to disregard all results that achieved below one
             % digit of accuracy.
-            %{
+            
             valid_idx = error_vector >= 1;
             error_vector = error_vector(valid_idx);
             x_axis_vector = x_axis_vector(valid_idx);
@@ -153,7 +156,7 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
                 error_vector = nan;
                 x_axis_vector = nan;
             end
-            %}
+            
 
             % If "plot_all_b_sz" parameter is set to 0, we shall only plot
             % the results for every other block size.
@@ -224,8 +227,8 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
     ax = gca;
     ax.XAxis.FontSize = 20;
     ax.YAxis.FontSize = 20;
-    ylim([-14 5]);
-    yticks([0,  1, 5, 10, 15]);
+    ylim([1 5]);
+    yticks([0,  1, 3, 5, 10, 15]);
 end
 
 function[Data_out] = data_preprocessing_best(Data_in, num_b_sizes, num_krylov_iters, num_iters)

@@ -48,7 +48,7 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
     % iterations out of num_iters.
     % Additionally, since we only run SVD once, populate the set with SVD
     % results.
-    Data = data_preprocessing_best(Data, num_b_sizes, num_krylov_iters, num_iters);
+    Data = data_preprocessing_best(Data, num_b_sizes, num_krylov_iters, num_iters)
 
     svd_gflop = 4 * rows^2 * cols + 22 * cols^3 / 10^9;
     ctr = 1;
@@ -110,9 +110,9 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
         % Plot SVDS.
         if plot_mode == "gflops"
             Data_SVDS(:, 4) = (svd_gflop ./ Data_SVDS(:, 4)) ./ 10^6;
-            semilogy(Data_SVDS(:, 4), Data_SVDS(:, 3), '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
+            plot(Data_SVDS(:, 4), Data_SVDS(:, 3), '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
         elseif plot_mode == "num_triplets"
-            loglog(Data_SVDS(:, 2), Data_SVDS(:, 3), '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
+            semilogx(Data_SVDS(:, 2), Data_SVDS(:, 3), '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
         end
 
         % Add an SVDS legend entry.
@@ -159,6 +159,8 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
             % the results for every other block size.
             if (mod(ctr, 2) ~= 0 || plot_all_b_sz)
                 if plot_mode == "num_triplets"
+                    x_axis_vector
+                    error_vector
                     semilogx(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
                 elseif plot_mode == "gflops"
                     plot(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
@@ -224,7 +226,7 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
     ax = gca;
     ax.XAxis.FontSize = 20;
     ax.YAxis.FontSize = 20;
-    ylim([-3 16]);
+    ylim([-10 16]);
     yticks([0,  1, 5, 10, 15]);
 end
 
