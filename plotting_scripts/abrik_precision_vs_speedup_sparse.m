@@ -11,19 +11,19 @@ function[] = abrik_precision_vs_speedup_sparse(filename, num_b_sizes, num_krylov
     Data_in = readfile(filename, 6);
     
     switch test_matrix_number
-        case 1
+        case 0
             rows = 11083;	
             cols = 11083;
-        case 2
+        case 1
             rows = 226451;	
             cols = 226451;
-        case 3
+        case 2
             rows = 806529;	
             cols = 806529;
-        case 4
+        case 3
             rows = 1219574;	
             cols = 1219574;
-        case 5
+        case 4
             rows = 2380515;	
             cols = 2380515;
     end

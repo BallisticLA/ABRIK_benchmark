@@ -48,7 +48,7 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
     % iterations out of num_iters.
     % Additionally, since we only run SVD once, populate the set with SVD
     % results.
-    Data = data_preprocessing_best(Data, num_b_sizes, num_krylov_iters, num_iters)
+    Data = data_preprocessing_best(Data, num_b_sizes, num_krylov_iters, num_iters);
 
     svd_gflop = 4 * rows^2 * cols + 22 * cols^3 / 10^9;
     ctr = 1;
@@ -84,27 +84,23 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
 
         % We want to disregard all results that achieved below one
         % digit of accuracy.
-        %{
         valid_idx = Data_SVDS(:,3) >= 1;
         Data_SVDS = Data_SVDS(valid_idx, :);
         if isempty(Data_SVDS)
             Data_SVDS = nan(1, 4);  
         end
-        %}
 
         % Since the SVDS subplot plot occupies the least amount of space, we will
         % place the legend here.
         % For that, we will have to mimic plotting the rest of the data.
-        if plot_mode == "num_triplets"
-            for i = 1:num_b_sizes
-                if plot_mode == "gflops"
-                    plot(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
-                elseif plot_mode == "num_triplets"
-                    semilogx(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
-                end
-                hold on
-                legend_entries{i} = ['b_{sz}=', num2str(Data_SVDS(i, 1))]; %#ok<AGROW>
+        for i = 1:num_b_sizes
+            if plot_mode == "gflops"
+                plot(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
+            elseif plot_mode == "num_triplets"
+                semilogx(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
             end
+            hold on
+            legend_entries{i} = ['b_{sz}=', num2str(Data_SVDS(i, 1))]; %#ok<AGROW>
         end
 
         % Plot SVDS.
@@ -118,7 +114,7 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
         % Add an SVDS legend entry.
         if plot_mode == "num_triplets"
             legend_entries{i+1} = 'SVDS'; %#ok<AGROW>
-            lgd = legend(legend_entries, 'Location', 'southwest');
+            lgd = legend(legend_entries, 'Location', 'southwest', 'NumColumns', 2);
         end
     else
         for i = 1:num_krylov_iters:size(Data, 1)
@@ -145,7 +141,6 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
             
             % We want to disregard all results that achieved below one
             % digit of accuracy.
-            %{
             valid_idx = error_vector >= 1;
             error_vector = error_vector(valid_idx);
             x_axis_vector = x_axis_vector(valid_idx);
@@ -153,14 +148,11 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
                 error_vector = nan;
                 x_axis_vector = nan;
             end
-            %}
 
             % If "plot_all_b_sz" parameter is set to 0, we shall only plot
             % the results for every other block size.
             if (mod(ctr, 2) ~= 0 || plot_all_b_sz)
                 if plot_mode == "num_triplets"
-                    x_axis_vector
-                    error_vector
                     semilogx(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
                 elseif plot_mode == "gflops"
                     plot(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
@@ -226,7 +218,7 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
     ax = gca;
     ax.XAxis.FontSize = 20;
     ax.YAxis.FontSize = 20;
-    ylim([-10 16]);
+    ylim([1 16]);
     yticks([0,  1, 5, 10, 15]);
 end
 
