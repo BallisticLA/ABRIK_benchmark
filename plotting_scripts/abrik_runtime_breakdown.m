@@ -9,6 +9,7 @@ function[] = abrik_runtime_breakdown(filename, num_b_sizes, num_matmuls, num_ite
         nexttile
         process_and_plot(Data_in(num_iters*num_matmuls*num_b_sizes*(i-1)+1:num_iters*num_matmuls*num_b_sizes*i, :), num_iters, num_b_sizes, num_matmuls, show_lables, b_sz_show, plot_position, num_matrices_to_process)
         plot_position = plot_position + 1;
+        b_sz_show = b_sz_show * 2;
     end
 end
 

@@ -17,6 +17,9 @@ function[] = abrik_precision_vs_speedup_sparse(filename, num_b_sizes, num_krylov
         case 1
             rows = 226451;	
             cols = 226451;
+        case 1.5
+            rows = 113225;
+            cols = 113225;
         case 2
             rows = 806529;	
             cols = 806529;
