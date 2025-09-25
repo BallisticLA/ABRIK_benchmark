@@ -28,13 +28,13 @@ function[] = abrik_precision_vs_speedup(filename, rows, cols, num_b_sizes, num_k
 
     % Plots ABRIK digits of accuracy vs speedup over SVD.
     nexttile
-    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "gflops", plot_all_b_sz, show_lables);
+    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 6, err_type, "wall_clock", plot_all_b_sz, show_lables);
     % Plots RSVD digits of accuracy vs speedup over SVD.
     nexttile
-    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 9, err_type, "gflops", plot_all_b_sz, show_lables);
+    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 9, err_type, "wall_clock", plot_all_b_sz, show_lables);
     % Plots SVDS digits of accuracy vs speedup over SVD.
     nexttile
-    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 12, err_type, "gflops", plot_all_b_sz, show_lables);
+    process_and_plot(Data_in(num_iters*num_krylov_iters*num_b_sizes*(i-1)+1:num_iters*num_krylov_iters*num_b_sizes*i, :), rows, cols, num_iters, num_b_sizes, num_krylov_iters, 12, err_type, "wall_clock", plot_all_b_sz, show_lables);
 end
 
 % alg_column_idx is 6, 9 or 12 - signifies which alg we will be comparing against
@@ -50,9 +50,13 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
     % results.
     Data = data_preprocessing_best(Data, num_b_sizes, num_krylov_iters, num_iters);
 
-    svd_gflop = 4 * rows^2 * cols + 22 * cols^3 / 10^9;
     ctr = 1;
     all_tics = unique(Data(:, 2) .* Data(:, 1) ./2);
+
+    % We need to have a global variable for tracking the absolute fastest
+    % and slowest datapoints
+    x_axis_vector_min = 1000000000;
+    x_axis_vector_max = 0;
 
     if alg_column_idx == 12
         % SVDS does not have a notion of block size, yet we use the
@@ -94,19 +98,22 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
         % place the legend here.
         % For that, we will have to mimic plotting the rest of the data.
         for i = 1:num_b_sizes
-            if plot_mode == "gflops"
-                plot(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
+            if plot_mode == "wall_clock"
+                semilogx(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
             elseif plot_mode == "num_triplets"
                 semilogx(nan, nan, marker_array{i}, MarkerSize=18, LineWidth=1.8);
             end
             hold on
-            legend_entries{i} = ['b_{sz}=', num2str(Data_SVDS(i, 1))]; %#ok<AGROW>
+            legend_entries{i} = ['b=', num2str(Data_SVDS(i, 1))]; %#ok<AGROW>
         end
 
         % Plot SVDS.
-        if plot_mode == "gflops"
-            Data_SVDS(:, 4) = (svd_gflop ./ Data_SVDS(:, 4)) ./ 10^6;
-            plot(Data_SVDS(:, 4), Data_SVDS(:, 3), '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
+        if plot_mode == "wall_clock"
+            x_axis_vector = Data_SVDS(:, 4) ./ 10^6; %(svd_gflop ./ Data_SVDS(:, 4)) ./ 10^6;
+            semilogx(x_axis_vector, Data_SVDS(:, 3), '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
+            % Update global vars
+            x_axis_vector_max = max(x_axis_vector_max, max(x_axis_vector));
+            x_axis_vector_min = min(x_axis_vector_min, min(x_axis_vector));
         elseif plot_mode == "num_triplets"
             semilogx(Data_SVDS(:, 2), Data_SVDS(:, 3), '-*' , 'Color', 'black', MarkerSize=18, LineWidth=1.8);
         end
@@ -118,17 +125,8 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
         end
     else
         for i = 1:num_krylov_iters:size(Data, 1)
-            % Speedup over SVD for all krylov iterations using a given block
-            % size for a given algorithm.
-            if plot_mode == "speedup_over_svd"
-                    % Speedup over SVD on the x_axis; SVD speed is under column
-                    % index 15.
-                    x_axis_vector = Data(i:(i+num_krylov_iters-1), 15) ./ Data(i:(i+num_krylov_iters-1), alg_column_idx);
-            elseif plot_mode == "gflops"
-                    x_axis_vector = (svd_gflop ./ Data(i:(i+num_krylov_iters-1), alg_column_idx)) ./ 10^6;
-            elseif plot_mode == "num_matmuls"
-                % Num_matmuls on the x_axis 
-                x_axis_vector = Data(i:(i+num_krylov_iters-1), 2);
+            if plot_mode == "wall_clock"
+                    x_axis_vector = Data(i:(i+num_krylov_iters-1), alg_column_idx) ./ 10^6; %(svd_gflop ./ Data(i:(i+num_krylov_iters-1), alg_column_idx)) ./ 10^6;
             elseif plot_mode == "num_triplets"
                 % Number of singular triplets estimated (num_matmuls * b_sz) / 2 on the x_axis 
                 x_axis_vector = Data(i:(i+num_krylov_iters-1), 2) .* Data(i:(i+num_krylov_iters-1), 1) ./2;
@@ -147,6 +145,13 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
             if isempty(error_vector)
                 error_vector = nan;
                 x_axis_vector = nan;
+                x_axis_vector_min = 1;
+                x_axis_vector_max = 2;
+            else
+                % Update global vars if we're not totally disregarding the
+                % results
+                x_axis_vector_max = max(x_axis_vector_max, max(x_axis_vector));
+                x_axis_vector_min = min(x_axis_vector_min, min(x_axis_vector));
             end
 
             % If "plot_all_b_sz" parameter is set to 0, we shall only plot
@@ -154,8 +159,8 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
             if (mod(ctr, 2) ~= 0 || plot_all_b_sz)
                 if plot_mode == "num_triplets"
                     semilogx(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
-                elseif plot_mode == "gflops"
-                    plot(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
+                elseif plot_mode == "wall_clock"
+                    semilogx(x_axis_vector, error_vector, marker_array{ctr}, MarkerSize=18, LineWidth=1.8);
                 end
                 hold on
             end
@@ -179,7 +184,7 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
                     title('Spectra SVDS', 'FontSize', 20);
             end
             xlabel('#triplets found', 'FontSize', 20)
-        elseif plot_mode == "gflops"
+        elseif plot_mode == "wall_clock"
             xlabel('#GigaFLOPS/s', 'FontSize', 20)
         end
     end
@@ -207,10 +212,19 @@ function[] = process_and_plot(Data, rows, cols, num_iters, num_b_sizes, num_kryl
         xticks(odd_tics);
 
         xlim([min(odd_tics) max(all_tics)]);
-    elseif plot_mode == "gflops"
-        % Set jist the lower limit in the x-axis.
-        curr_lim = xlim;
-        xlim([0, curr_lim(2)]);
+    elseif plot_mode == "wall_clock"
+        xtic_vector = [0.01 0.02 0.05 0.1 0.2 0.5 1 2 5 10 20 50 100 200 500 1000];
+        
+        x_axis_vector_min
+        x_axis_vector_max
+
+        % Lower x-limit is the largest value that is smaller than the min
+        % value in teh x_axis_vector
+        min_x_lim = max(xtic_vector(xtic_vector < x_axis_vector_min));
+        max_x_lim = min(xtic_vector(xtic_vector > x_axis_vector_max));
+        xlim([min_x_lim max_x_lim])
+
+        xticks(xtic_vector)
     end
 
     grid on

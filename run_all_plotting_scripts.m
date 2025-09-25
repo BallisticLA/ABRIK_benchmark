@@ -61,7 +61,7 @@ fig_save(gcf, fig_path, 14, 5);
 % HM3 dataset from Rob's paper
 figure('Name', 'abrik_precision_vs_performance_dense_mat_HM3', 'NumberTitle', 'off');
 filename = CPU_path_1 + "dense/" + benchmarking_date + "HM3_ABRIK_speed_comparisons_num_info_lines_6.txt";
-abrik_precision_vs_speedup(filename, 957, 6453, 7, 7, 3, 2, 1, 1, 0);
+abrik_precision_vs_speedup(filename, 957, 6453, 6, 7, 3, 2, 1, 1, 0);
 fig_save(gcf, fig_path, 14, 9);
 %}
 
