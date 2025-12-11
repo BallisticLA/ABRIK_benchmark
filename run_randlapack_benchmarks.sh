@@ -60,3 +60,23 @@ numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_spars
 numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/SapphireRapids/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_1/CurlCurl_1.mtx 3 10 5 4 16 32 64 128 256 8 16 32 64;
 numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_runtime_breakdown_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/SapphireRapids/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_1/CurlCurl_0.mtx 3 10 5 4 16 32 64 128 256 8 16 32 64;
 numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_runtime_breakdown_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/SapphireRapids/sparse/ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_2/CurlCurl_1.mtx 3 10 5 4 16 32 64 128 256 8 16 32 64;
+
+
+
+
+
+
+
+
+
+
+
+
+NEW NEW NEW
+
+numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/NEW/sparse/ten_triplets_ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_0/CurlCurl_0.mtx 3 10 6 4 16 32 64 128 256 512 8 16 32 64;
+numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/NEW/sparse/five_triplets_ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_0/CurlCurl_0.mtx 3 5 6 4 16 32 64 128 256 512 8 16 32 64;
+numactl --interleave=all env OMP_NUM_THREADS=128 ./ABRIK_speed_comparisons_sparse /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/benchmark_output_abrik_paper/NEW/sparse/one_triplet_ /lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_0/CurlCurl_0.mtx 3 1 6 4 16 32 64 128 256 512 8 16 32 64;
+
+
+

@@ -25,6 +25,12 @@ fig_save(gcf, fig_path, 14, 5);
 
 % Sparse model reduction problems
 
+figure('Name', ['buf' num2str(1)], 'NumberTitle', 'off');
+filename = CPU_path_1 + "sparse/" + benchmarking_date + "Mat0_ABRIK_speed_comparisons_sparse_num_info_lines_6.txt";
+abrik_precision_vs_speedup_sparse(filename, 4, 4, 3, 1, 1.5, 0);
+%fig_save(gcf, fig_path, 10, 10);
+
+%{
 figure('Name', ['mat1_submatrix_abrik_precision_vs_speedup_mat_' num2str(1)], 'NumberTitle', 'off');
 filename = CPU_path_1 + "sparse/" + benchmarking_date + "Mat1_submatrix_ABRIK_speed_comparisons_sparse_num_info_lines_6.txt";
 abrik_precision_vs_speedup_sparse(filename, 4, 4, 3, 1, 1.5, 0);
@@ -39,7 +45,7 @@ figure('Name', '_abrik_runtime_breakdown_sparse', 'NumberTitle', 'off');
 filename = CPU_path_1 + "sparse/" + benchmarking_date + "_ABRIK_runtime_breakdown_sparse_num_info_lines_6.txt";
 abrik_runtime_breakdown(filename, 4, 4, 3, 16, 2, 0);
 fig_save(gcf, fig_path, 14, 5);
-
+%}
 %{
 figure('Name', ['abrik_precision_vs_speedup_mat_' num2str(2)], 'NumberTitle', 'off');
 filename = CPU_path_1 + "sparse/" + benchmarking_date + "Mat2_ABRIK_speed_comparisons_sparse_num_info_lines_6.txt";
