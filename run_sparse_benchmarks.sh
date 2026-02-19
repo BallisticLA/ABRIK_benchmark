@@ -2,41 +2,53 @@
 #
 # Full sparse benchmark suite for ABRIK speed comparisons.
 #
-# Runs sparse matrices (CurlCurl_0, CurlCurl_1) through:
-#   - ABRIK: b_sz = {4, 8, 16, 32} x matmuls = {2, 4, 8, 16, 32}  (20 configs)
-#   - SVDS:  nev = target_rank                                       (1 config)
-#   x 3 runs per config = 63 benchmark invocations per matrix
-#   (No RSVD in sparse benchmark)
+# Runs CurlCurl_1 sparse matrix at two submatrix_dim_ratios (0.5 and 1.0) through:
+#   - ABRIK:          b_sz = {16, 32} x matmuls = {2, 4, 8, 16, 32, 64}  (12 configs)
+#   - ABRIK_adaptive: b_sz = {16, 32}, init=4, incr=4                     (2 configs, auto)
+#   - SVDS:           nev = target_rank                                    (1 config)
+#   x 5 runs per config
+#   No RSVD in sparse benchmark, no GESDD.
 #
 # Usage:
-#   ./run_sparse_benchmarks.sh                   # run both CurlCurl matrices
+#   ./run_sparse_benchmarks.sh                   # run full suite
 #   ./run_sparse_benchmarks.sh --quick           # quick validation (1 run, fewer params)
 #
-# Output CSVs go to: /home/mymel/data/ABRIK/results/
+# Requires: RANDNLA_PROJECT_DIR environment variable (set by RandLAPACK/install.sh)
+# Output CSVs go to: <script_dir>/results/
 #
 
 set -euo pipefail
 
 # ---- Paths ----
-BENCHMARK_BIN="/home/mymel/RandNLA/RandNLA-project/build/benchmark-build/ABRIK_speed_comparisons_sparse"
-OUTPUT_DIR="/home/mymel/data/ABRIK/results"
-MATRIX_DIR="/home/mymel/data/ABRIK/input_matrices"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [[ -z "${RANDNLA_PROJECT_DIR:-}" ]]; then
+    echo "ERROR: RANDNLA_PROJECT_DIR is not set."
+    echo "Source RandLAPACK's install.sh or add 'export RANDNLA_PROJECT_DIR=...' to ~/.bashrc"
+    exit 1
+fi
+
+BENCHMARK_BIN="${RANDNLA_PROJECT_DIR}/build/benchmark-build/ABRIK_speed_comparisons_sparse"
+OUTPUT_DIR="${SCRIPT_DIR}/results"
+MATRIX_DIR="${SCRIPT_DIR}/input_matrices"
 
 # ---- Parameters ----
 PRECISION="double"
 TARGET_RANK=10
 
 # ABRIK parameters
-BLOCK_SIZES=(4 8 16 32)
-MATMUL_COUNTS=(2 4 8 16 32)
+BLOCK_SIZES=(16 32)
+MATMUL_COUNTS=(2 4 8 16 32 64)
 NUM_BLOCK_SIZES=${#BLOCK_SIZES[@]}
 NUM_MATMUL_SIZES=${#MATMUL_COUNTS[@]}
 
 # Benchmark settings
-NUM_RUNS=3
-RUN_GESDD=0           # Skip GESDD for sparse (too expensive)
+NUM_RUNS=5
+RUN_GESDD=0           # No GESDD
 WRITE_MATRICES=0      # Don't write U,V,Sigma files
-SUBMATRIX_DIM_RATIO=1.0  # Use full matrix
+
+# Submatrix dimension ratios to run
+RATIOS=(0.5 1.0)
 
 # ---- Parse arguments ----
 MODE="full"
@@ -46,24 +58,17 @@ fi
 
 # Quick mode: fewer parameters, single run
 if [[ "$MODE" == "quick" ]]; then
-    BLOCK_SIZES=(8 16)
-    MATMUL_COUNTS=(4 8)
+    BLOCK_SIZES=(16 32)
+    MATMUL_COUNTS=(4 16)
     NUM_BLOCK_SIZES=${#BLOCK_SIZES[@]}
     NUM_MATMUL_SIZES=${#MATMUL_COUNTS[@]}
     NUM_RUNS=1
 fi
 
-# ---- Select matrices ----
-MATRICES=(
-    "${MATRIX_DIR}/CurlCurl_0.mtx"
-    "${MATRIX_DIR}/CurlCurl_1.mtx"
-)
-MATRIX_NAMES=("CurlCurl_0" "CurlCurl_1")
-
 # ---- Verify prerequisites ----
 if [[ ! -x "$BENCHMARK_BIN" ]]; then
     echo "ERROR: benchmark binary not found at $BENCHMARK_BIN"
-    echo "Build it with: cd /home/mymel/RandNLA/RandNLA-project/build/benchmark-build && cmake --build . --target ABRIK_speed_comparisons_sparse -j\$(nproc)"
+    echo "Build it with: cd ${RANDNLA_PROJECT_DIR}/build/benchmark-build && cmake --build . --target ABRIK_speed_comparisons_sparse -j\$(nproc)"
     exit 1
 fi
 
@@ -80,18 +85,18 @@ echo "Num runs:       $NUM_RUNS"
 echo "ABRIK configs:  ${NUM_BLOCK_SIZES} block sizes x ${NUM_MATMUL_SIZES} matmul counts = $((NUM_BLOCK_SIZES * NUM_MATMUL_SIZES))"
 echo "  block_sizes:  ${BLOCK_SIZES[*]}"
 echo "  matmul_counts: ${MATMUL_COUNTS[*]}"
+echo "ABRIK adaptive: ${NUM_BLOCK_SIZES} block sizes (init=4, incr=4, auto)"
 echo "SVDS:           nev = $TARGET_RANK"
-echo "Submatrix ratio: $SUBMATRIX_DIM_RATIO"
-echo "Matrices:       ${#MATRICES[@]}"
-for i in "${!MATRICES[@]}"; do
-    echo "  [${MATRIX_NAMES[$i]}] ${MATRICES[$i]}"
-done
+echo "Matrix:         CurlCurl_1.mtx"
+echo "Ratios:         ${RATIOS[*]}"
 echo "Output dir:     $OUTPUT_DIR"
 echo ""
 
-TOTAL_CONFIGS=$(( (NUM_BLOCK_SIZES * NUM_MATMUL_SIZES) * NUM_RUNS + NUM_RUNS ))
-echo "Total runs per matrix: $TOTAL_CONFIGS"
-echo "Total runs overall:    $(( TOTAL_CONFIGS * ${#MATRICES[@]} ))"
+ABRIK_FIXED=$((NUM_BLOCK_SIZES * NUM_MATMUL_SIZES))
+ABRIK_ADAPT=${NUM_BLOCK_SIZES}
+TOTAL_CONFIGS=$(( (ABRIK_FIXED + ABRIK_ADAPT + 1) * NUM_RUNS ))
+echo "Total runs per (matrix, ratio): $TOTAL_CONFIGS"
+echo "Total runs overall:             $(( TOTAL_CONFIGS * ${#RATIOS[@]} ))"
 echo "=========================================="
 echo ""
 
@@ -101,30 +106,29 @@ echo ""
 # <write_matrices> <submatrix_dim_ratio> <num_block_sizes> <num_matmul_sizes>
 # <block_sizes...> <matmul_sizes...>
 
+MATRIX="${MATRIX_DIR}/CurlCurl_1.mtx"
+
+if [[ ! -f "$MATRIX" ]]; then
+    echo "ERROR: Matrix file not found: $MATRIX"
+    exit 1
+fi
+
 START_TIME=$(date +%s)
 
-for i in "${!MATRICES[@]}"; do
-    MATRIX="${MATRICES[$i]}"
-    NAME="${MATRIX_NAMES[$i]}"
-
-    if [[ ! -f "$MATRIX" ]]; then
-        echo "WARNING: Matrix file not found, skipping: $MATRIX"
-        continue
-    fi
-
-    echo ">>> [$((i+1))/${#MATRICES[@]}] Running ${NAME} (${MATRIX})..."
-    MATRIX_START=$(date +%s)
+for ratio in "${RATIOS[@]}"; do
+    echo ">>> Running CurlCurl_1 @ ratio=${ratio} (${MATRIX})..."
+    RUN_START=$(date +%s)
 
     "$BENCHMARK_BIN" \
         "$PRECISION" "$OUTPUT_DIR" "$MATRIX" \
         "$NUM_RUNS" "$TARGET_RANK" "$RUN_GESDD" \
-        "$WRITE_MATRICES" "$SUBMATRIX_DIM_RATIO" \
+        "$WRITE_MATRICES" "$ratio" \
         "$NUM_BLOCK_SIZES" "$NUM_MATMUL_SIZES" \
         "${BLOCK_SIZES[@]}" "${MATMUL_COUNTS[@]}"
 
-    MATRIX_END=$(date +%s)
-    MATRIX_ELAPSED=$((MATRIX_END - MATRIX_START))
-    echo "    ${NAME} completed in ${MATRIX_ELAPSED}s"
+    RUN_END=$(date +%s)
+    RUN_ELAPSED=$((RUN_END - RUN_START))
+    echo "    CurlCurl_1 @ ratio=${ratio} completed in ${RUN_ELAPSED}s"
     echo ""
 done
 
