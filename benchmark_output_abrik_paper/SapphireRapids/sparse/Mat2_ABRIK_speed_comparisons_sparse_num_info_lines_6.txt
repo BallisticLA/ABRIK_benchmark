@@ -1,8 +1,0 @@
-Description: Results from the ABRIK speed comparison benchmark, recording the time it takes to perform ABRIK and alternative methods for low-rank SVD, specifically on sparse matrices.
-File format: 15 columns, showing krylov block size, nummber of matmuls permitted, and num svals and svecs to approximate, followed by the residual error, standard lowrank error and execution time for all algorithms (ABRIK, SVDS)
- Rows correspond to algorithm runs with Krylov block sizes varying as specified, and numbers of matmuls varying as specified per each block size, with num_runs repititions of each number of matmuls.
-Input type:/lustre/isaac24/scratch/mmelnic1/ABRIK_benchmark/test_matrices/suitsparse/CurlCurl_2/CurlCurl_2.mtx
-Input size:806529 by 806529
-Additional parameters: Krylov block sizes 32, 64, 128, 256,  matmuls: 16, 32, 64, 128,  num runs per size 3 num singular values and vectors approximated 10
-32,  16,  10,  0,  0,  0.0250362,  810556476,
-32,  16,  10,  0,  0,  0.0250362,  802476885,

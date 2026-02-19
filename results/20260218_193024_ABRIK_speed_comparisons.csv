@@ -1,0 +1,19 @@
+# ABRIK Speed Comparison Benchmark
+# Precision: double
+# Input matrix: /home/mymel/data/ABRIK/input_matrices/2000x2000_rank_2000/ABRIK_test_mat6.txt
+# Input size: 2000 x 2000
+# Target rank: 10
+# Krylov block sizes: 8, 16, 
+# Matmul counts: 16, 
+# RSVD p values: 
+# Runs per configuration: 1
+# Tolerance: 4.94851e-14
+# Run GESDD: no
+# Residual metric: sqrt(||S^{-1}AV - U||^2_F + ||(A'U)S^{-1} - V||^2_F)
+# Timings in microseconds
+algorithm, b_sz, num_matmuls, p, target_rank, error, duration_us
+ABRIK, 8, 16, 0, 10, 0.0285619, 188675
+ABRIK, 16, 16, 0, 10, 0.00168544, 176546
+ABRIK_adaptive, 8, 204, 0, 10, 1.62598e-14, 6313354
+ABRIK_adaptive, 16, 204, 0, 10, 1.73864e-14, 19321290
+SVDS, 0, 0, 0, 10, 1.20532e-14, 200251
