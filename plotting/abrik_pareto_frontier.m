@@ -11,12 +11,16 @@ fastest configuration that achieves >= that accuracy.
 
 Usage:
   abrik_pareto_frontier('path/to/file.csv')
+  abrik_pareto_frontier(T, meta)               % pre-parsed data
 %}
-function abrik_pareto_frontier(filename)
-    [T, meta] = parse_abrik_csv(filename);
+function abrik_pareto_frontier(arg1, arg2)
+    if nargin == 2 && istable(arg1)
+        T = arg1;  meta = arg2;
+    else
+        [T, meta] = parse_abrik_csv(arg1);
+    end
     T = select_best_runs(T);
 
-    figure('Position', [100 100 900 600]);
     hold on; grid on;
 
     legend_entries = {};

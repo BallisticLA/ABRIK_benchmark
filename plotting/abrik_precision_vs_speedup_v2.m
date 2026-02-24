@@ -12,12 +12,16 @@ Key improvements over v1:
 
 Usage:
   abrik_precision_vs_speedup_v2('path/to/file.csv')
+  abrik_precision_vs_speedup_v2(T, meta)               % pre-parsed data
 %}
-function abrik_precision_vs_speedup_v2(filename)
-    [T, meta] = parse_abrik_csv(filename);
+function abrik_precision_vs_speedup_v2(arg1, arg2)
+    if nargin == 2 && istable(arg1)
+        T = arg1;  meta = arg2;
+    else
+        [T, meta] = parse_abrik_csv(arg1);
+    end
     T = select_best_runs(T);
 
-    figure('Position', [100 100 1400 700]);
     tiledlayout(2, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
 
     % ---- Row 1: digits vs parameter ----

@@ -11,12 +11,16 @@ All algorithms overlaid on a single plot:
 
 Usage:
   abrik_convergence_profile('path/to/file.csv')
+  abrik_convergence_profile(T, meta)               % pre-parsed data
 %}
-function abrik_convergence_profile(filename)
-    [T, meta] = parse_abrik_csv(filename);
+function abrik_convergence_profile(arg1, arg2)
+    if nargin == 2 && istable(arg1)
+        T = arg1;  meta = arg2;
+    else
+        [T, meta] = parse_abrik_csv(arg1);
+    end
     T = select_best_runs(T);
 
-    figure('Position', [100 100 900 600]);
     hold on; grid on;
 
     markers_abrik = {'o', 'd', 's', '^', 'v', '+', '*'};

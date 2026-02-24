@@ -7,6 +7,8 @@ target_rank, error, duration_us) and the three new plotting scripts:
   - abrik_pareto_frontier      (Option B: Pareto time-vs-accuracy)
   - abrik_precision_vs_speedup_v2 (Option C: 2x3 per-algorithm grid)
 
+Each CSV is parsed once; pre-parsed (T, meta) are passed to all plots.
+
 Usage:
   run('/home/mymel/data/ABRIK_benchmark/plotting/plot_all.m')
 %}
@@ -15,50 +17,24 @@ script_dir  = fileparts(mfilename('fullpath'));
 repo_root   = fileparts(script_dir);            % one level above plotting/
 results_dir = fullfile(repo_root, 'results');
 
-%% ---- Dense: Mat 1 (10000x10000) ----
-mat1 = fullfile(results_dir, '20260218_170422_ABRIK_speed_comparisons.csv');
+%% ---- Helper: parse once, plot three ways ----
+csv_files = {
+    fullfile(results_dir, '20260218_170422_ABRIK_speed_comparisons.csv'),       'Mat 1 (10k)'
+    fullfile(results_dir, '20260218_174414_ABRIK_speed_comparisons.csv'),       'Mat 6 (10k)'
+    fullfile(results_dir, '20260218_204624_ABRIK_speed_comparisons_sparse.csv'),'CurlCurl_1 r=0.5'
+    fullfile(results_dir, '20260218_211427_ABRIK_speed_comparisons_sparse.csv'),'CurlCurl_1 r=1.0'
+};
 
-figure('Name', 'Mat 1 — Convergence Profile');
-abrik_convergence_profile(mat1);
+for k = 1:size(csv_files, 1)
+    [T, meta] = parse_abrik_csv(csv_files{k, 1});
+    label = csv_files{k, 2};
 
-figure('Name', 'Mat 1 — Pareto Frontier');
-abrik_pareto_frontier(mat1);
+    figure('Name', [label ' — Convergence Profile']);
+    abrik_convergence_profile(T, meta);
 
-figure('Name', 'Mat 1 — Per-Algorithm Grid');
-abrik_precision_vs_speedup_v2(mat1);
+    figure('Name', [label ' — Pareto Frontier']);
+    abrik_pareto_frontier(T, meta);
 
-%% ---- Dense: Mat 6 (10000x10000) ----
-mat6 = fullfile(results_dir, '20260218_174414_ABRIK_speed_comparisons.csv');
-
-figure('Name', 'Mat 6 — Convergence Profile');
-abrik_convergence_profile(mat6);
-
-figure('Name', 'Mat 6 — Pareto Frontier');
-abrik_pareto_frontier(mat6);
-
-figure('Name', 'Mat 6 — Per-Algorithm Grid');
-abrik_precision_vs_speedup_v2(mat6);
-
-%% ---- Sparse: CurlCurl_1 (ratio 0.5, 113k x 113k) ----
-sparse_05 = fullfile(results_dir, '20260218_204624_ABRIK_speed_comparisons_sparse.csv');
-
-figure('Name', 'CurlCurl_1 r=0.5 — Convergence Profile');
-abrik_convergence_profile(sparse_05);
-
-figure('Name', 'CurlCurl_1 r=0.5 — Pareto Frontier');
-abrik_pareto_frontier(sparse_05);
-
-figure('Name', 'CurlCurl_1 r=0.5 — Per-Algorithm Grid');
-abrik_precision_vs_speedup_v2(sparse_05);
-
-%% ---- Sparse: CurlCurl_1 (ratio 1.0, 226k x 226k) ----
-sparse_10 = fullfile(results_dir, '20260218_211427_ABRIK_speed_comparisons_sparse.csv');
-
-figure('Name', 'CurlCurl_1 r=1.0 — Convergence Profile');
-abrik_convergence_profile(sparse_10);
-
-figure('Name', 'CurlCurl_1 r=1.0 — Pareto Frontier');
-abrik_pareto_frontier(sparse_10);
-
-figure('Name', 'CurlCurl_1 r=1.0 — Per-Algorithm Grid');
-abrik_precision_vs_speedup_v2(sparse_10);
+    figure('Name', [label ' — Per-Algorithm Grid'], 'Position', [100 100 1400 700]);
+    abrik_precision_vs_speedup_v2(T, meta);
+end
