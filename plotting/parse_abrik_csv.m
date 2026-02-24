@@ -21,6 +21,9 @@ function [T, meta] = parse_abrik_csv(filename)
     meta.p_values     = [];
 
     fid = fopen(filename, 'r');
+    if fid == -1
+        error('parse_abrik_csv:FileNotFound', 'Cannot open file: %s', filename);
+    end
     cleanup = onCleanup(@() fclose(fid));
 
     while ~feof(fid)
@@ -52,6 +55,9 @@ function [T, meta] = parse_abrik_csv(filename)
     % ---- Read data rows ----
     % Re-open and use textscan to read the unified format.
     fid2 = fopen(filename, 'r');
+    if fid2 == -1
+        error('parse_abrik_csv:FileNotFound', 'Cannot open file: %s', filename);
+    end
     cleanup2 = onCleanup(@() fclose(fid2));
 
     % Skip all '#' lines and the column header line
