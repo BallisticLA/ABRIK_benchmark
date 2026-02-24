@@ -31,10 +31,13 @@ for k = 1:size(csv_files, 1)
 
     figure('Name', [label ' — Convergence Profile']);
     abrik_convergence_profile(T, meta);
+    drawnow;
 
     figure('Name', [label ' — Pareto Frontier']);
     abrik_pareto_frontier(T, meta);
+    drawnow;
 
     figure('Name', [label ' — Per-Algorithm Grid'], 'Position', [100 100 1400 700]);
     abrik_precision_vs_speedup_v2(T, meta);
+    drawnow;
 end
