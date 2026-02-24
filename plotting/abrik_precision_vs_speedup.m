@@ -68,6 +68,9 @@ function [num_b_sizes, num_matmul_sizes, num_runs, matrix_name] = parse_metadata
     matrix_name      = "";
 
     fid = fopen(filename, 'r');
+    if fid == -1
+        error('parse_metadata:FileNotFound', 'Cannot open file: %s', filename);
+    end
     cleanup = onCleanup(@() fclose(fid));
 
     while ~feof(fid)

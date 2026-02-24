@@ -2,14 +2,15 @@
 Master plotting script - generates all ABRIK benchmark figures.
 
 Usage (from MATLAB, with working directory set to the ABRIK data root):
-  cd /home/mymel/data/ABRIK
-  run('plotting/plot_all.m')
+  run('/home/mymel/data/ABRIK_benchmark/plotting/plot_all.m')
 
-Each figure is created in a new window.  Paths assume the working
-directory is /home/mymel/data/ABRIK/.
+Each figure is created in a new window.  Paths are resolved relative
+to the script location (no need to cd first).
 %}
 
-results_dir = fullfile(pwd, 'results');
+script_dir  = fileparts(mfilename('fullpath'));
+repo_root   = fileparts(script_dir);            % one level above plotting/
+results_dir = fullfile(repo_root, 'results');
 
 %% ---- Dense speed comparisons ----
 figure('Name', 'Dense - Mat 1');
