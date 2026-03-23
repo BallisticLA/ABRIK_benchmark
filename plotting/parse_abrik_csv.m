@@ -1,9 +1,13 @@
 %{
-Parses the new unified ABRIK benchmark CSV format.
+Parses the ABRIK benchmark CSV format.
 
-Reads '#'-prefixed metadata into a struct, then reads data rows into a
-MATLAB table with columns: algorithm, b_sz, num_matmuls, p, target_rank,
-error, duration_us.
+Handles both dense and sparse formats:
+  Dense:  b_sz, num_matmuls, target_rank, err_ABRIK, dur_ABRIK, err_RSVD, dur_RSVD, err_SVDS, dur_SVDS, err_SVD, dur_SVD
+  Sparse: b_sz, num_matmuls, target_rank, err_ABRIK, dur_ABRIK, err_SVDS, dur_SVDS
+
+Reads '#'-prefixed metadata into a struct, then unpivots the wide-format
+data rows into a long-format table with columns:
+  algorithm, b_sz, num_matmuls, target_rank, error, duration_us
 
 Usage:
   [T, meta] = parse_abrik_csv('path/to/file.csv')
@@ -18,7 +22,7 @@ function [T, meta] = parse_abrik_csv(filename)
     meta.num_runs     = 0;
     meta.block_sizes  = [];
     meta.matmul_counts = [];
-    meta.p_values     = [];
+    meta.is_sparse    = false;
 
     fid = fopen(filename, 'r');
     if fid == -1
@@ -26,34 +30,44 @@ function [T, meta] = parse_abrik_csv(filename)
     end
     cleanup = onCleanup(@() fclose(fid));
 
+    header_line = '';
     while ~feof(fid)
         line = fgetl(fid);
-        if ~startsWith(line, '#')
+        if startsWith(strtrim(line), '#')
+            if contains(line, 'Input matrix:')
+                tok = regexp(line, 'Input matrix:\s*(.*)', 'tokens');
+                meta.input_matrix = strtrim(tok{1}{1});
+            elseif contains(line, 'Input size:')
+                tok = regexp(line, 'Input size:\s*(.*)', 'tokens');
+                meta.input_size = strtrim(tok{1}{1});
+            elseif contains(line, 'Target rank:')
+                tok = regexp(line, 'Target rank:\s*(\d+)', 'tokens');
+                meta.target_rank = str2double(tok{1}{1});
+            elseif contains(line, 'Runs per configuration:')
+                tok = regexp(line, 'Runs per configuration:\s*(\d+)', 'tokens');
+                meta.num_runs = str2double(tok{1}{1});
+            elseif contains(line, 'Krylov block sizes:')
+                meta.block_sizes = parse_csv_values(line);
+            elseif contains(line, 'Matmul counts:')
+                meta.matmul_counts = parse_csv_values(line);
+            elseif contains(line, 'Sparse')
+                meta.is_sparse = true;
+            end
+        else
+            % First non-comment line is the column header
+            header_line = strtrim(line);
             break;
-        end
-        if contains(line, 'Input matrix:')
-            tok = regexp(line, 'Input matrix:\s*(.*)', 'tokens');
-            meta.input_matrix = strtrim(tok{1}{1});
-        elseif contains(line, 'Input size:')
-            tok = regexp(line, 'Input size:\s*(.*)', 'tokens');
-            meta.input_size = strtrim(tok{1}{1});
-        elseif contains(line, 'Target rank:')
-            tok = regexp(line, 'Target rank:\s*(\d+)', 'tokens');
-            meta.target_rank = str2double(tok{1}{1});
-        elseif contains(line, 'Runs per configuration:')
-            tok = regexp(line, 'Runs per configuration:\s*(\d+)', 'tokens');
-            meta.num_runs = str2double(tok{1}{1});
-        elseif contains(line, 'Krylov block sizes:')
-            meta.block_sizes = parse_csv_values(line);
-        elseif contains(line, 'Matmul counts:')
-            meta.matmul_counts = parse_csv_values(line);
-        elseif contains(line, 'RSVD p values:')
-            meta.p_values = parse_csv_values(line);
         end
     end
 
+    % Detect format from header
+    is_sparse_format = ~contains(header_line, 'err_RSVD');
+
+    if is_sparse_format
+        meta.is_sparse = true;
+    end
+
     % ---- Read data rows ----
-    % Re-open and use textscan to read the unified format.
     fid2 = fopen(filename, 'r');
     if fid2 == -1
         error('parse_abrik_csv:FileNotFound', 'Cannot open file: %s', filename);
@@ -64,21 +78,45 @@ function [T, meta] = parse_abrik_csv(filename)
     while ~feof(fid2)
         pos = ftell(fid2);
         line = fgetl(fid2);
-        if ~startsWith(strtrim(line), '#') && ~startsWith(strtrim(line), 'algorithm')
+        if ~startsWith(strtrim(line), '#') && ~startsWith(strtrim(line), 'b_sz')
             fseek(fid2, pos, 'bof');
             break;
         end
     end
 
-    % Read: algorithm(string), b_sz, num_matmuls, p, target_rank, error, duration_us
-    C = textscan(fid2, '%s %f %f %f %f %f %f', 'Delimiter', ',', 'TreatAsEmpty', 'NA');
+    if is_sparse_format
+        % Sparse: b_sz, num_matmuls, target_rank, err_ABRIK, dur_ABRIK, err_SVDS, dur_SVDS
+        C = textscan(fid2, '%f %f %f %f %f %f %f', 'Delimiter', ',');
+        n_rows = length(C{1});
 
-    % Strip trailing commas from algorithm names
-    alg_names = strtrim(C{1});
+        % Unpivot: each input row -> 2 output rows (ABRIK, SVDS)
+        alg_names = [repmat({"ABRIK"}, n_rows, 1); repmat({"SVDS"}, n_rows, 1)];
+        b_sz_col  = [C{1}; C{1}];
+        mm_col    = [C{2}; C{2}];
+        tr_col    = [C{3}; C{3}];
+        err_col   = [C{4}; C{6}];
+        dur_col   = [C{5}; C{7}];
+    else
+        % Dense: b_sz, num_matmuls, target_rank, err_ABRIK, dur_ABRIK, err_RSVD, dur_RSVD, err_SVDS, dur_SVDS, err_SVD, dur_SVD
+        C = textscan(fid2, '%f %f %f %f %f %f %f %f %f %f %f', 'Delimiter', ',');
+        n_rows = length(C{1});
 
-    T = table(alg_names, C{2}, C{3}, C{4}, C{5}, C{6}, C{7}, ...
-              'VariableNames', {'algorithm', 'b_sz', 'num_matmuls', 'p', ...
+        % Unpivot: each input row -> up to 4 output rows (ABRIK, RSVD, SVDS, GESDD)
+        alg_names = [repmat({"ABRIK"}, n_rows, 1); repmat({"RSVD"}, n_rows, 1); ...
+                     repmat({"SVDS"}, n_rows, 1); repmat({"GESDD"}, n_rows, 1)];
+        b_sz_col  = repmat(C{1}, 4, 1);
+        mm_col    = repmat(C{2}, 4, 1);
+        tr_col    = repmat(C{3}, 4, 1);
+        err_col   = [C{4}; C{6}; C{8}; C{10}];
+        dur_col   = [C{5}; C{7}; C{9}; C{11}];
+    end
+
+    T = table(string(alg_names), b_sz_col, mm_col, tr_col, err_col, dur_col, ...
+              'VariableNames', {'algorithm', 'b_sz', 'num_matmuls', ...
                                 'target_rank', 'error', 'duration_us'});
+
+    % Remove rows where duration is 0 (GESDD only runs on first iteration)
+    T = T(T.duration_us > 0, :);
 end
 
 %% -----------------------------------------------------------------------

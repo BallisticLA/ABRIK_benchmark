@@ -5,7 +5,7 @@
 # Algorithms run (per matrix):
 #   - ABRIK:          b_sz = {16, 32} x matmuls = {2, 4, 8, 16, 32, 64}  (12 configs)
 #   - ABRIK_adaptive: b_sz = {16, 32}, init=4, incr=4                     (2 configs, auto)
-#   - RSVD:           p = {0, 1, 2, 4, 8, 16, 32, 64}                    (8 configs)
+#   - RSVD:           b_sz = {4, 8, 16, 32} x p = {0, 1, 2, ..., 64}     (32 configs)
 #   - SVDS:           nev = target_rank                                    (1 config)
 #   x 5 runs per config
 #   No GESDD.
@@ -46,7 +46,9 @@ MATMUL_COUNTS=(2 4 8 16 32 64)
 NUM_BLOCK_SIZES=${#BLOCK_SIZES[@]}
 NUM_MATMUL_SIZES=${#MATMUL_COUNTS[@]}
 
-# RSVD power iteration values
+# RSVD parameters
+RSVD_BLOCK_SIZES=(4 8 16 32)
+NUM_RSVD_BLOCK_SIZES=${#RSVD_BLOCK_SIZES[@]}
 P_VALUES=(0 1 2 4 8 16 32 64)
 NUM_P_VALUES=${#P_VALUES[@]}
 
@@ -68,6 +70,8 @@ if [[ "$MODE" == "quick" ]]; then
     MATMUL_COUNTS=(4 16 64)
     NUM_BLOCK_SIZES=${#BLOCK_SIZES[@]}
     NUM_MATMUL_SIZES=${#MATMUL_COUNTS[@]}
+    RSVD_BLOCK_SIZES=(8 16 32)
+    NUM_RSVD_BLOCK_SIZES=${#RSVD_BLOCK_SIZES[@]}
     P_VALUES=(1 4 16 64)
     NUM_P_VALUES=${#P_VALUES[@]}
     NUM_RUNS=1
@@ -124,7 +128,8 @@ echo "ABRIK configs:  ${NUM_BLOCK_SIZES} block sizes x ${NUM_MATMUL_SIZES} matmu
 echo "  block_sizes:  ${BLOCK_SIZES[*]}"
 echo "  matmul_counts: ${MATMUL_COUNTS[*]}"
 echo "ABRIK adaptive: ${NUM_BLOCK_SIZES} block sizes (init=4, incr=4, auto)"
-echo "RSVD configs:   ${NUM_P_VALUES} p values"
+echo "RSVD configs:   ${NUM_RSVD_BLOCK_SIZES} block sizes x ${NUM_P_VALUES} p values = $((NUM_RSVD_BLOCK_SIZES * NUM_P_VALUES))"
+echo "  rsvd_b_sizes: ${RSVD_BLOCK_SIZES[*]}"
 echo "  p_values:     ${P_VALUES[*]}"
 echo "SVDS:           nev = $TARGET_RANK"
 echo "GESDD:          no"
@@ -138,7 +143,8 @@ echo ""
 # Configs per matrix: (ABRIK fixed + ABRIK adaptive + RSVD + SVDS) * NUM_RUNS
 ABRIK_FIXED=$((NUM_BLOCK_SIZES * NUM_MATMUL_SIZES))
 ABRIK_ADAPT=${NUM_BLOCK_SIZES}
-TOTAL_CONFIGS=$(( (ABRIK_FIXED + ABRIK_ADAPT + NUM_P_VALUES + 1) * NUM_RUNS ))
+RSVD_CONFIGS=$((NUM_RSVD_BLOCK_SIZES * NUM_P_VALUES))
+TOTAL_CONFIGS=$(( (ABRIK_FIXED + ABRIK_ADAPT + RSVD_CONFIGS + 1) * NUM_RUNS ))
 echo "Total runs per matrix: $TOTAL_CONFIGS"
 echo "Total runs overall:    $(( TOTAL_CONFIGS * ${#MATRICES[@]} ))"
 echo "=========================================="
@@ -162,8 +168,8 @@ for i in "${!MATRICES[@]}"; do
     "$BENCHMARK_BIN" \
         "$PRECISION" "$OUTPUT_DIR" "$MATRIX" \
         "$NUM_RUNS" "$M" "$N" "$TARGET_RANK" "$RUN_GESDD" \
-        "$NUM_BLOCK_SIZES" "$NUM_MATMUL_SIZES" "$NUM_P_VALUES" \
-        "${BLOCK_SIZES[@]}" "${MATMUL_COUNTS[@]}" "${P_VALUES[@]}"
+        "$NUM_BLOCK_SIZES" "$NUM_MATMUL_SIZES" "$NUM_RSVD_BLOCK_SIZES" "$NUM_P_VALUES" \
+        "${BLOCK_SIZES[@]}" "${MATMUL_COUNTS[@]}" "${RSVD_BLOCK_SIZES[@]}" "${P_VALUES[@]}"
 
     MATRIX_END=$(date +%s)
     MATRIX_ELAPSED=$((MATRIX_END - MATRIX_START))

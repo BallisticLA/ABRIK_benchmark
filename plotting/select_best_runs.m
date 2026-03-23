@@ -1,20 +1,20 @@
 %{
 Selects the best (fastest) run per configuration from benchmark data.
 
-Groups rows by (algorithm, b_sz, num_matmuls, p), keeps the row with
+Groups rows by (algorithm, b_sz, num_matmuls), keeps the row with
 minimum duration_us per group.
 
 Usage:
   T_best = select_best_runs(T)
 
 Input:  table from parse_abrik_csv with columns:
-        algorithm, b_sz, num_matmuls, p, target_rank, error, duration_us
+        algorithm, b_sz, num_matmuls, target_rank, error, duration_us
 Output: table with one row per unique configuration (fastest run).
 %}
 function T_best = select_best_runs(T)
-    % Create a grouping key from (algorithm, b_sz, num_matmuls, p)
+    % Create a grouping key from (algorithm, b_sz, num_matmuls)
     keys = strcat(T.algorithm, '_', string(T.b_sz), '_', ...
-                  string(T.num_matmuls), '_', string(T.p));
+                  string(T.num_matmuls));
 
     unique_keys = unique(keys, 'stable');
     n_configs = numel(unique_keys);
