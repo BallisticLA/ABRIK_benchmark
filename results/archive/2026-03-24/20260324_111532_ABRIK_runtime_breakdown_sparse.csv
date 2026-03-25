@@ -1,0 +1,14 @@
+# ABRIK Runtime Breakdown Benchmark (Sparse)
+# Precision: double
+# Input matrix: /home/mymel/data/ABRIK_benchmark/input_matrices/CurlCurl_1.mtx
+# Input size: 226451 x 226451 (submatrix ratio: 1)
+# Target rank: 10
+# Krylov block sizes: 32, 
+# Matmul counts: 32, 
+# Runs per configuration: 3
+# Tolerance: 4.94851e-14
+# Timings in microseconds
+b_sz, num_matmuls, allocation_t, get_factors_t, ungqr_t, reorth_t, qr_t, gemm_A_t, main_loop_t, sketching_t, r_cpy_t, s_cpy_t, norm_t, t_rest, total_t
+32, 32, 1949387, 1193028, 0, 3028568, 1523995, 1977724, 7927839, 25556, 0, 0, 3219, 749541, 10451018
+32, 32, 1968741, 1167043, 0, 3007346, 1534485, 1405499, 6941639, 31074, 0, 0, 2783, 542287, 9659258
+32, 32, 2281577, 1194817, 0, 2978440, 1583801, 1498292, 7055447, 28296, 0, 0, 3099, 538462, 10106784

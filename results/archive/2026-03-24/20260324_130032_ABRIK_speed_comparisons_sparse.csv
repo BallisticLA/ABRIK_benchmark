@@ -1,0 +1,24 @@
+# ABRIK Speed Comparison Benchmark (Sparse)
+# Precision: double
+# Input matrix: /home/mymel/data/ABRIK_benchmark/input_matrices/CurlCurl_1.mtx
+# Input size: 113225 x 113225 (submatrix ratio: 0.5)
+# Target rank: 10
+# Krylov block sizes: 4, 8, 
+# Matmul counts: 16, 32, 2, 4, 8, 
+# Runs per configuration: 1
+# Tolerance: 4.94851e-14
+# Run GESDD: no
+# Write matrices: no
+# Residual metric: sqrt(||S^{-1}AV - U||^2_F + ||(A'U)S^{-1} - V||^2_F)
+# Timings in microseconds
+b_sz, num_matmuls, target_rank, err_ABRIK, dur_ABRIK, err_SVDS, dur_SVDS
+4, 16, 10, 0.110163, 544298, 0.0036682, 208438
+4, 32, 10, 0.00633439, 707794, 0.0208867, 309623
+4, 2, 10, 1.62073, 40463, 0.932317, 37131
+4, 4, 10, 1.69114, 100865, 0.932317, 43672
+4, 8, 10, 0.689971, 159227, 0.391702, 66083
+8, 16, 10, 0.0200853, 498825, 0.0208867, 300932
+8, 32, 10, 0.00498245, 1040199, 9.7179e-05, 790464
+8, 2, 10, 2.29134, 59774, 0.932317, 42032
+8, 4, 10, 1.31915, 96296, 0.391702, 65207
+8, 8, 10, 0.361439, 232947, 0.0036682, 222254

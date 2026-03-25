@@ -26,13 +26,16 @@ function abrik_runtime_breakdown(filename, options)
         filename           string
         options.BlockSize  (1,1) double  = 0
         options.ShowLabels (1,1) logical = true
+        options.ShowLegend (1,1) logical = true
     end
 
     % ---- Parse metadata from '#'-prefixed header lines ----
-    [num_b_sizes, num_matmul_sizes, num_runs, matrix_name] = parse_metadata(filename);
+    [num_b_sizes, num_matmul_sizes, num_runs, meta] = parse_metadata(filename);
 
     % ---- Read numeric data (readmatrix skips '#' lines and text header) ----
-    Data_in = readmatrix(filename, 'CommentStyle', '#');
+    Data_in = readmatrix(char(filename), 'CommentStyle', '#');
+    % Drop any NaN rows (text header rows that readmatrix couldn't parse)
+    Data_in = Data_in(~any(isnan(Data_in), 2), :);
 
     % Pick fastest run per (b_sz, num_matmuls) configuration — done once.
     Data = select_best_runs(Data_in, num_b_sizes, num_matmul_sizes, num_runs);
@@ -73,43 +76,64 @@ function abrik_runtime_breakdown(filename, options)
     Pct(:, 7) = 100 * sum(Data(:, 10:14), 2) ./ total;  % Other
 
     % ---- Plot stacked bar chart ----
-    colors = {'b', 'r', 'g', 'm', 'c', 'k', [0.5, 0.5, 0.5]};
+    % Colorblind-safe palette (Wong 2011) for breakdown categories.
+    colors = {[0.00 0.45 0.70], ...   % Data Alloc   — blue
+              [0.90 0.60 0.00], ...   % SVD+Factors  — orange
+              [0.00 0.62 0.45], ...   % ORGQR        — bluish green
+              [0.80 0.40 0.00], ...   % Reorth       — vermillion
+              [0.35 0.70 0.90], ...   % QR           — sky blue
+              [0.00 0.00 0.00], ...   % GEMM(M)      — black
+              [0.80 0.80 0.80]};      % Other        — light gray
     bplot = bar(Pct, 'stacked');
     for k = 1:numel(colors)
         bplot(k).FaceColor = colors{k};
         bplot(k).FaceAlpha = 0.8;
     end
 
-    % X-axis: #singular triplets = b_sz * num_matmuls / 2.
-    set(gca, 'XTickLabel', Data(:, 1) .* Data(:, 2) ./ 2);
+    % X-axis: matrix-vector products = b_sz * num_matmuls
+    mvps = Data(:, 1) .* Data(:, 2);
+    set(gca, 'XTickLabel', mvps);
 
     % ---- Legend & axis formatting ----
-    lgd = legend('Data Alloc', 'SVD+Factors', 'ORGQR', 'Reorth', ...
-                 'QR', 'GEMM(M)', 'Other', 'Location', 'northeastoutside');
-    lgd.FontSize = 20;
+    if options.ShowLegend
+        lgd = legend('Data Alloc', 'SVD+Factors', 'ORGQR', 'Reorth', ...
+                     'QR', 'GEMM(M)', 'Other', 'Location', 'northeastoutside');
+        lgd.FontSize = 20;
+    end
 
     ylim([0 100]);
     ax = gca;
     ax.FontSize = 23;
 
     if options.ShowLabels
-        title(['ABRIK Runtime Breakdown  b\_sz = ' num2str(b_sz_show)], 'FontSize', 20);
+        % Build informative title: matrix name | size | dense/sparse | b_sz
+        title_parts = {};
+        if meta.matrix_name ~= ""
+            [~, fname, ~] = fileparts(meta.matrix_name);
+            title_parts{end+1} = char(fname);
+        end
+        if meta.input_size ~= ""
+            title_parts{end+1} = char(meta.input_size);
+        end
+        if meta.is_sparse
+            title_parts{end+1} = 'sparse';
+        else
+            title_parts{end+1} = 'dense';
+        end
+        title_parts{end+1} = sprintf('b = %d', b_sz_show);
+        title(strjoin(title_parts, '  |  '), 'FontSize', 16, 'Interpreter', 'none');
         ylabel('Runtime %', 'FontSize', 20);
-        xlabel('#triplets', 'FontSize', 20);
-    end
-
-    % Figure supertitle from the input matrix name.
-    if matrix_name ~= ""
-        sgtitle(matrix_name, 'FontSize', 22, 'Interpreter', 'none');
+        xlabel('Matrix-vector products', 'FontSize', 20);
     end
 end
 
 %% -----------------------------------------------------------------------
-function [num_b_sizes, num_matmul_sizes, num_runs, matrix_name] = parse_metadata(filename)
+function [num_b_sizes, num_matmul_sizes, num_runs, meta] = parse_metadata(filename)
 % Reads '#'-prefixed header lines and extracts benchmark parameters.
 %
 % Expected lines (produced by ABRIK_runtime_breakdown.cc):
 %   # Input matrix: /path/to/matrix.mtx
+%   # Input size: 10000 x 10000
 %   # Krylov block sizes: 2, 4, 8, 16,
 %   # Matmul counts: 4, 8, 16, 32,
 %   # Runs per configuration: 3
@@ -117,9 +141,14 @@ function [num_b_sizes, num_matmul_sizes, num_runs, matrix_name] = parse_metadata
     num_b_sizes      = 0;
     num_matmul_sizes = 0;
     num_runs         = 0;
-    matrix_name      = "";
+    meta.matrix_name = "";
+    meta.input_size  = "";
+    meta.is_sparse   = false;
 
-    fid = fopen(filename, 'r');
+    fid = fopen(char(filename), 'r');
+    if fid == -1
+        error('parse_metadata:FileNotFound', 'Cannot open file: %s', filename);
+    end
     cleanup = onCleanup(@() fclose(fid));
 
     while ~feof(fid)
@@ -129,7 +158,12 @@ function [num_b_sizes, num_matmul_sizes, num_runs, matrix_name] = parse_metadata
         end
         if contains(line, 'Input matrix:')
             tokens = regexp(line, 'Input matrix:\s*(.*)', 'tokens');
-            matrix_name = strtrim(tokens{1}{1});
+            meta.matrix_name = strtrim(tokens{1}{1});
+        elseif contains(line, 'Input size:')
+            tokens = regexp(line, 'Input size:\s*(.*)', 'tokens');
+            meta.input_size = strtrim(tokens{1}{1});
+        elseif contains(line, 'Sparse')
+            meta.is_sparse = true;
         elseif contains(line, 'Krylov block sizes:')
             num_b_sizes = count_csv_values(line);
         elseif contains(line, 'Matmul counts:')

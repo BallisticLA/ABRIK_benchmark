@@ -1,0 +1,14 @@
+# ABRIK Runtime Breakdown Benchmark
+# Precision: double
+# Input matrix: /home/mymel/data/ABRIK_benchmark/input_matrices/10000x10000_rank_10000/ABRIK_test_mat6.txt
+# Input size: 10000 x 10000
+# Target rank: 10
+# Krylov block sizes: 32, 
+# Matmul counts: 32, 
+# Runs per configuration: 3
+# Tolerance: 4.94851e-14
+# Timings in microseconds
+b_sz, num_matmuls, allocation_t, get_factors_t, ungqr_t, reorth_t, qr_t, gemm_A_t, main_loop_t, sketching_t, r_cpy_t, s_cpy_t, norm_t, t_rest, total_t
+32, 32, 64085, 152709, 112826, 152083, 25847, 1453087, 1811401, 3896, 72198, 115, 1966, 43380, 2082192
+32, 32, 99751, 103918, 125411, 168374, 27269, 1492846, 1943513, 3828, 79867, 68, 1920, 46023, 2149275
+32, 32, 119375, 88519, 121498, 160821, 25177, 1491264, 1964224, 16031, 102371, 84, 1952, 48567, 2175659
