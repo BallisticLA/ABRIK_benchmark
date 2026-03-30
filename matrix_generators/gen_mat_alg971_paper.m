@@ -41,11 +41,12 @@ function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode)
         Sigma(6, :) = sort(abs(randn(1, n)), 'descend');
 
         for i = 1:size(Sigma, 1)
-            A_file = fullfile(file_path, "ABRIK_test_mat" + i + ".txt");
+            A_file = fullfile(file_path, "ABRIK_test_mat" + i + ".mtx");
             S_file = fullfile(file_path, "Spectrum_mat"   + i + ".txt");
 
-            writematrix(U * diag(Sigma(i, :)) * V', A_file, 'Delimiter', ' ');
-            writematrix(Sigma(i, :),                 S_file, 'Delimiter', ' ');
+            mmwrite(A_file, U * diag(Sigma(i, :)) * V', ...
+                    sprintf('Alg971 test matrix %d, %dx%d, rank param %d', i, m, n, low_rank));
+            writematrix(Sigma(i, :), S_file, 'Delimiter', ' ');
             fprintf("Matrix %d processed\n", i);
         end
 
