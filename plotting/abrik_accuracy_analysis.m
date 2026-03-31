@@ -1,4 +1,8 @@
-function [] = abrik_accuracy_analysis(csv_path)
+function [] = abrik_accuracy_analysis(csv_path, options)
+    arguments
+        csv_path = ''
+        options.CreateFigure (1,1) logical = true
+    end
 % ABRIK_ACCURACY_ANALYSIS  Plot per-triplet accuracy metrics from
 % ABRIK_accuracy_analysis benchmark output.
 %
@@ -71,9 +75,11 @@ function [] = abrik_accuracy_analysis(csv_path)
         0.49 0.18 0.56;   % purple
     ];
 
-    fig_name = sprintf('%s (b_{sz} = %d, matmuls = %d)', mat_name, b_sz, num_matmuls);
-    figure('Name', fig_name, 'NumberTitle', 'off', ...
-           'Position', [100 100 1400 500]);
+    if options.CreateFigure
+        fig_name = sprintf('%s (b_{sz} = %d, matmuls = %d)', mat_name, b_sz, num_matmuls);
+        figure('Name', fig_name, 'NumberTitle', 'off', ...
+               'Position', [100 100 1400 500]);
+    end
 
     semilogy(x, T.res_err_abrik,  '-o', 'Color', colors(1,:), 'MarkerSize', 4, 'LineWidth', 1.5);
     hold on

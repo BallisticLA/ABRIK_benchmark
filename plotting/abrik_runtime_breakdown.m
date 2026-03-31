@@ -162,9 +162,9 @@ function [num_b_sizes, num_matmul_sizes, num_runs, meta] = parse_metadata(filena
         elseif contains(line, 'Input size:')
             tokens = regexp(line, 'Input size:\s*(.*)', 'tokens');
             meta.input_size = strtrim(tokens{1}{1});
-        elseif contains(line, 'Sparse')
+        elseif contains(line, 'sparse', 'IgnoreCase', true)
             meta.is_sparse = true;
-        elseif contains(line, 'Krylov block sizes:')
+        elseif contains(line, 'block sizes:', 'IgnoreCase', true)
             num_b_sizes = count_csv_values(line);
         elseif contains(line, 'Matmul counts:')
             num_matmul_sizes = count_csv_values(line);
@@ -174,7 +174,7 @@ function [num_b_sizes, num_matmul_sizes, num_runs, meta] = parse_metadata(filena
         end
     end
 
-    assert(num_b_sizes > 0,      'Could not parse "Krylov block sizes" from metadata.');
+    assert(num_b_sizes > 0,      'Could not parse "block sizes" from metadata.');
     assert(num_matmul_sizes > 0,  'Could not parse "Matmul counts" from metadata.');
     assert(num_runs > 0,          'Could not parse "Runs per configuration" from metadata.');
 end

@@ -46,11 +46,11 @@ function [T, meta] = parse_abrik_csv(filename)
             elseif contains(line, 'Runs per configuration:')
                 tok = regexp(line, 'Runs per configuration:\s*(\d+)', 'tokens');
                 meta.num_runs = str2double(tok{1}{1});
-            elseif contains(line, 'Krylov block sizes:')
+            elseif contains(line, 'block sizes:', 'IgnoreCase', true)
                 meta.block_sizes = parse_csv_values(line);
             elseif contains(line, 'Matmul counts:')
                 meta.matmul_counts = parse_csv_values(line);
-            elseif contains(line, 'Sparse')
+            elseif contains(line, 'sparse', 'IgnoreCase', true)
                 meta.is_sparse = true;
             end
         else
@@ -60,14 +60,10 @@ function [T, meta] = parse_abrik_csv(filename)
         end
     end
 
-    % Detect format from header
-    is_sparse_format = ~contains(header_line, 'err_RSVD');
-
-    if is_sparse_format
-        meta.is_sparse = true;
-    end
-
     % ---- Read data rows ----
+    % Unified format (always 11 columns):
+    %   b_sz, num_matmuls, target_rank,
+    %   err_ABRIK, dur_ABRIK, err_RSVD, dur_RSVD, err_SVDS, dur_SVDS, err_SVD, dur_SVD
     fid2 = fopen(filename, 'r');
     if fid2 == -1
         error('parse_abrik_csv:FileNotFound', 'Cannot open file: %s', filename);
@@ -84,32 +80,17 @@ function [T, meta] = parse_abrik_csv(filename)
         end
     end
 
-    if is_sparse_format
-        % Sparse: b_sz, num_matmuls, target_rank, err_ABRIK, dur_ABRIK, err_SVDS, dur_SVDS
-        C = textscan(fid2, '%f %f %f %f %f %f %f', 'Delimiter', ',');
-        n_rows = length(C{1});
+    C = textscan(fid2, '%f %f %f %f %f %f %f %f %f %f %f', 'Delimiter', ',');
+    n_rows = length(C{1});
 
-        % Unpivot: each input row -> 2 output rows (ABRIK, SVDS)
-        alg_names = [repmat({"ABRIK"}, n_rows, 1); repmat({"SVDS"}, n_rows, 1)];
-        b_sz_col  = [C{1}; C{1}];
-        mm_col    = [C{2}; C{2}];
-        tr_col    = [C{3}; C{3}];
-        err_col   = [C{4}; C{6}];
-        dur_col   = [C{5}; C{7}];
-    else
-        % Dense: b_sz, num_matmuls, target_rank, err_ABRIK, dur_ABRIK, err_RSVD, dur_RSVD, err_SVDS, dur_SVDS, err_SVD, dur_SVD
-        C = textscan(fid2, '%f %f %f %f %f %f %f %f %f %f %f', 'Delimiter', ',');
-        n_rows = length(C{1});
-
-        % Unpivot: each input row -> up to 4 output rows (ABRIK, RSVD, SVDS, GESDD)
-        alg_names = [repmat({"ABRIK"}, n_rows, 1); repmat({"RSVD"}, n_rows, 1); ...
-                     repmat({"SVDS"}, n_rows, 1); repmat({"GESDD"}, n_rows, 1)];
-        b_sz_col  = repmat(C{1}, 4, 1);
-        mm_col    = repmat(C{2}, 4, 1);
-        tr_col    = repmat(C{3}, 4, 1);
-        err_col   = [C{4}; C{6}; C{8}; C{10}];
-        dur_col   = [C{5}; C{7}; C{9}; C{11}];
-    end
+    % Unpivot: each input row -> 4 output rows (ABRIK, RSVD, SVDS, GESDD)
+    alg_names = [repmat({"ABRIK"}, n_rows, 1); repmat({"RSVD"}, n_rows, 1); ...
+                 repmat({"SVDS"}, n_rows, 1); repmat({"GESDD"}, n_rows, 1)];
+    b_sz_col  = repmat(C{1}, 4, 1);
+    mm_col    = repmat(C{2}, 4, 1);
+    tr_col    = repmat(C{3}, 4, 1);
+    err_col   = [C{4}; C{6}; C{8}; C{10}];
+    dur_col   = [C{5}; C{7}; C{9}; C{11}];
 
     T = table(string(alg_names), b_sz_col, mm_col, tr_col, err_col, dur_col, ...
               'VariableNames', {'algorithm', 'b_sz', 'num_matmuls', ...

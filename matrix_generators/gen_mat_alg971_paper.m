@@ -13,7 +13,7 @@ Arguments:
   operation_mode    — "generate" to build matrices, "plot" to read & plot
 
 Output is saved to:
-  /home/mymel/data/ABRIK/input_matrices/<m>x<n>_rank_<low_rank>/
+  ../input_matrices/<m>x<n>_rank_<low_rank>/
 %}
 function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode)
 
@@ -41,11 +41,12 @@ function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode)
         Sigma(6, :) = sort(abs(randn(1, n)), 'descend');
 
         for i = 1:size(Sigma, 1)
-            A_file = fullfile(file_path, "ABRIK_test_mat" + i + ".mtx");
+            A_file = fullfile(file_path, "ABRIK_test_mat" + i + ".txt");
             S_file = fullfile(file_path, "Spectrum_mat"   + i + ".txt");
 
-            mmwrite(A_file, U * diag(Sigma(i, :)) * V', ...
-                    sprintf('Alg971 test matrix %d, %dx%d, rank param %d', i, m, n, low_rank));
+            % A = U * diag(Sigma) * V' — avoid forming the n-by-n diagonal matrix.
+            % U .* Sigma scales each column of U by the corresponding singular value.
+            writematrix((U .* Sigma(i, :)) * V', A_file, 'Delimiter', ' ');
             writematrix(Sigma(i, :), S_file, 'Delimiter', ' ');
             fprintf("Matrix %d processed\n", i);
         end

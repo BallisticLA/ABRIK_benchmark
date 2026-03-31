@@ -2,8 +2,7 @@
 Per-algorithm grid: digits of accuracy vs matvec budget (top row) and
 vs wall-clock time (bottom row).
 
-Dense data (ABRIK + RSVD + Spectra): 2x3 layout.
-Sparse data (ABRIK + Spectra only):  2x2 layout.
+Always 2x3 layout: ABRIK, RSVD, Spectra (unified CSV format).
 
   Row 1: digits vs matvec budget (b_sz * num_matmuls), log scale
   Row 2: digits vs time (seconds), log scale
@@ -28,19 +27,14 @@ function abrik_precision_vs_speedup_v2(arg1, arg2, nvargs)
     end
     T = select_best_runs(T);
 
-    has_rsvd = any(T.algorithm == "RSVD");
-
     if ~isempty(nvargs.Parent)
         parent = nvargs.Parent;
     else
         parent = gcf;
     end
 
-    if has_rsvd
-        tl = tiledlayout(parent, 2, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
-    else
-        tl = tiledlayout(parent, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
-    end
+    % Always 2x3: ABRIK, RSVD, Spectra (unified format always includes RSVD)
+    tl = tiledlayout(parent, 2, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
 
     % Colorblind-safe palette (Wong 2011, Nature Methods) for block sizes.
     % Supports up to 7 block sizes; each gets a unique color + marker.
@@ -65,17 +59,17 @@ function abrik_precision_vs_speedup_v2(arg1, arg2, nvargs)
     ylabel('Digits of accuracy', 'FontSize', 16);
     xlabel('Matrix-vector products', 'FontSize', 16);
 
-    if has_rsvd
-        nexttile(tl);
-        plot_budget_by_bsz(T, "RSVD", unique_bsz, colors, markers);
-        title('RSVD', 'FontSize', 18);
-        xlabel('Matrix-vector products', 'FontSize', 16);
-    end
+    nexttile(tl);
+    plot_budget_by_bsz(T, "RSVD", unique_bsz, colors, markers);
+    title('RSVD', 'FontSize', 18);
+    xlabel('Matrix-vector products', 'FontSize', 16);
+    set(gca, 'YTickLabel', []);
 
     nexttile(tl);
     plot_spectra_budget(T, spectra_color);
     title('Spectra', 'FontSize', 18);
     xlabel('Matrix-vector products', 'FontSize', 16);
+    set(gca, 'YTickLabel', []);
 
     % ---- Row 2: digits vs time (log scale) ----
 
@@ -84,15 +78,15 @@ function abrik_precision_vs_speedup_v2(arg1, arg2, nvargs)
     ylabel('Digits of accuracy', 'FontSize', 16);
     xlabel('Time (s)', 'FontSize', 16);
 
-    if has_rsvd
-        nexttile(tl);
-        plot_time_by_bsz(T, "RSVD", unique_bsz, colors, markers);
-        xlabel('Time (s)', 'FontSize', 16);
-    end
+    nexttile(tl);
+    plot_time_by_bsz(T, "RSVD", unique_bsz, colors, markers);
+    xlabel('Time (s)', 'FontSize', 16);
+    set(gca, 'YTickLabel', []);
 
     nexttile(tl);
     plot_spectra_time(T, spectra_color);
     xlabel('Time (s)', 'FontSize', 16);
+    set(gca, 'YTickLabel', []);
 
     % ---- Uniform axes across all tiles ----
     all_digits = log10(1 ./ T.error);
@@ -110,7 +104,7 @@ function abrik_precision_vs_speedup_v2(arg1, arg2, nvargs)
     end
 
     % Apply uniform x-axis: top row = budget, bottom row = time
-    n_cols = 3 - ~has_rsvd;
+    n_cols = 3;
 
     % Precompute shared log2 ticks for the bottom row (time axis)
     shared_time_ticks = compute_log2_ticks(time_lim);

@@ -30,9 +30,8 @@ function mmwrite(filename, A, comment)
         [rows, cols, vals] = find(A);
         nnz_count = length(vals);
         fprintf(fid, '%d %d %d\n', m, n, nnz_count);
-        for k = 1:nnz_count
-            fprintf(fid, '%d %d %.17g\n', rows(k), cols(k), vals(k));
-        end
+        % Vectorized write — much faster than per-element fprintf
+        fprintf(fid, '%d %d %.17g\n', [rows'; cols'; vals']);
     else
         % Array (dense column-major) format
         fprintf(fid, '%%%%MatrixMarket matrix array real general\n');
@@ -41,12 +40,10 @@ function mmwrite(filename, A, comment)
         end
 
         fprintf(fid, '%d %d\n', m, n);
-        % Column-major order (FORTRAN convention)
-        for j = 1:n
-            for i = 1:m
-                fprintf(fid, '%.17g\n', A(i, j));
-            end
-        end
+        % Convert to string in bulk, then write once.
+        % sprintf is ~5x faster than fprintf for large arrays.
+        str = sprintf('%.17g\n', A(:));
+        fwrite(fid, str, 'char');
     end
 
     fclose(fid);
