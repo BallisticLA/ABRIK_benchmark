@@ -2,15 +2,15 @@ function [] = abrik_accuracy_analysis(csv_path, options)
     arguments
         csv_path = ''
         options.CreateFigure (1,1) logical = true
+        options.ShowLabels (1,1) logical = true
     end
 % ABRIK_ACCURACY_ANALYSIS  Plot per-triplet accuracy metrics from
 % ABRIK_accuracy_analysis benchmark output.
 %
-% Produces a semilogy plot with four series:
+% Produces a semilogy plot with three series:
 %   1. Per-triplet SVD residual for ABRIK (blue circles)
-%   2. Per-triplet SVD residual for GESDD (red squares) — baseline at O(eps)
-%   3. Relative singular value difference (yellow crosses)
-%   4. Singular vector angular difference via QR-based sin(angle) (purple diamonds)
+%   2. Relative singular value difference (yellow crosses)
+%   3. Singular vector angular difference via QR-based sin(angle) (purple diamonds)
 %
 % The residual metric uses the "correct" a-posteriori error estimator:
 %   sqrt(||E_left||^2 + ||E_right||^2)
@@ -21,8 +21,13 @@ function [] = abrik_accuracy_analysis(csv_path, options)
 % avoiding the catastrophic cancellation in sqrt(1 - cos^2(theta)) that would
 % floor at sqrt(eps) ~ 1e-8 for well-converged triplets.
 %
+% Options:
+%   'CreateFigure' — true (default) creates a new figure; false plots into current axes
+%   'ShowLabels'   — true (default) shows axis labels and title; false omits them (for paper)
+%
 % Usage:
 %   abrik_accuracy_analysis('path/to/ABRIK_accuracy_analysis.csv')
+%   abrik_accuracy_analysis('...', 'ShowLabels', false)  % paper-ready (no labels/title)
 %   abrik_accuracy_analysis()  % opens file picker
 
     if nargin < 1
@@ -65,12 +70,10 @@ function [] = abrik_accuracy_analysis(csv_path, options)
     T.sval_diff(T.sval_diff == 0)       = NaN;
     T.svec_diff(T.svec_diff == 0)       = NaN;
     T.res_err_abrik(T.res_err_abrik == 0) = NaN;
-    T.res_err_gesdd(T.res_err_gesdd == 0) = NaN;
 
     % --- Plot ---
     colors = [ ...
         0.00 0.45 0.74;   % blue
-        0.85 0.33 0.10;   % red/orange
         0.93 0.69 0.13;   % yellow/gold
         0.49 0.18 0.56;   % purple
     ];
@@ -83,9 +86,8 @@ function [] = abrik_accuracy_analysis(csv_path, options)
 
     semilogy(x, T.res_err_abrik,  '-o', 'Color', colors(1,:), 'MarkerSize', 4, 'LineWidth', 1.5);
     hold on
-    semilogy(x, T.res_err_gesdd,  '-s', 'Color', colors(2,:), 'MarkerSize', 4, 'LineWidth', 1.5);
-    semilogy(x, T.sval_diff,      '-x', 'Color', colors(3,:), 'MarkerSize', 5, 'LineWidth', 1.5);
-    semilogy(x, T.svec_diff,      '-d', 'Color', colors(4,:), 'MarkerSize', 4, 'LineWidth', 1.5);
+    semilogy(x, T.sval_diff,      '-x', 'Color', colors(2,:), 'MarkerSize', 5, 'LineWidth', 1.5);
+    semilogy(x, T.svec_diff,      '-d', 'Color', colors(3,:), 'MarkerSize', 4, 'LineWidth', 1.5);
     hold off
 
     ax = gca;
@@ -94,15 +96,17 @@ function [] = abrik_accuracy_analysis(csv_path, options)
     grid on
 
     xlim([1 num_triplets]);
-    ylabel('accuracy', 'FontSize', 18);
-    xlabel('i', 'FontSize', 18);
-    title(sprintf('ABRIK results (b_{sz} = %d, matmuls = %d)', b_sz, num_matmuls), ...
-          'FontSize', 18);
+
+    if options.ShowLabels
+        ylabel('accuracy', 'FontSize', 18);
+        xlabel('i', 'FontSize', 18);
+        title(sprintf('ABRIK results (b_{sz} = %d, matmuls = %d)', b_sz, num_matmuls), ...
+              'FontSize', 18);
+    end
 
     lgd = legend({ ...
         'residual\_abrik:  sqrt(||E_L||^2 + ||E_R||^2)', ...
-        'residual\_gesdd', ...
-        'sval\_diff:  |\sigma_{abrik} - \sigma_{gesdd}| / \sigma_1', ...
+        'sval\_diff:  |\sigma_{abrik} - \sigma_{gesdd}| / \sigma_{gesdd}', ...
         'svec\_diff:  \sqrt{(sin^2\angle(u) + sin^2\angle(v))/2}' ...
         }, ...
         'NumColumns', 1, ...

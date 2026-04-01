@@ -59,16 +59,17 @@ nexttile(tl);
 abrik_runtime_breakdown(fullfile(results_dir, '20260330_211439_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4);
 set(gca, 'YTickLabel', []); ylabel('');
 
-%% === Figure 3: Per-Triplet Accuracy Analysis ===
-fig3 = figure('Name', 'ABRIK Per-Triplet Accuracy', 'Position', [150 150 1400 500]);
-tl3 = tiledlayout(fig3, 1, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+%% === Figure 3: Per-Triplet Accuracy Analysis (tabbed) ===
+fig3 = figure('Name', 'ABRIK Per-Triplet Accuracy', 'Position', [150 150 1500 600]);
+tg3 = uitabgroup(fig3);
 
-nexttile(tl3);
-abrik_accuracy_analysis(fullfile(results_dir, '20260327_143738_ABRIK_accuracy_analysis.csv'), 'CreateFigure', false);
+tab = uitab(tg3, 'Title', 'Mat 1');
+axes('Parent', tab);
+abrik_accuracy_analysis(fullfile(results_dir, '20260401_103154_ABRIK_accuracy_analysis.csv'), 'CreateFigure', false);
 
-nexttile(tl3);
-abrik_accuracy_analysis(fullfile(results_dir, '20260327_144453_ABRIK_accuracy_analysis.csv'), 'CreateFigure', false);
-set(gca, 'YTickLabel', []); ylabel('');
+tab = uitab(tg3, 'Title', 'Mat 6');
+axes('Parent', tab);
+abrik_accuracy_analysis(fullfile(results_dir, '20260401_103455_ABRIK_accuracy_analysis.csv'), 'CreateFigure', false);
 
 %% -----------------------------------------------------------------------
 function plot_abrik_in_tab(tab, results_dir, csv_name)
