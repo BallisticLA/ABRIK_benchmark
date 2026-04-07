@@ -68,9 +68,33 @@ tab = uitab(tg3, 'Title', 'Mat 6');
 axes('Parent', tab);
 abrik_accuracy_analysis(fullfile(results_dir, '20260401_103455_ABRIK_accuracy_analysis.csv'), 'CreateFigure', false);
 
+%% === Save all tabs as PNG ===
+plots_dir = fullfile(fileparts(script_dir), 'plots');
+if ~exist(plots_dir, 'dir'), mkdir(plots_dir); end
+
+save_tabs(tg1, plots_dir, 'perf');
+save_tabs(tg2, plots_dir, 'breakdown');
+save_tabs(tg3, plots_dir, 'accuracy');
+
+fprintf('Saved %d PNGs to %s\n', ...
+    numel(tg1.Children) + numel(tg2.Children) + numel(tg3.Children), plots_dir);
+
 %% -----------------------------------------------------------------------
 function plot_abrik_in_tab(tab, results_dir, csv_name)
     csv_path = fullfile(results_dir, csv_name);
     [T, meta] = parse_abrik_csv(csv_path);
     abrik_precision_vs_speedup_v2(T, meta, 'Parent', tab);
+end
+
+%% -----------------------------------------------------------------------
+function save_tabs(tg, plots_dir, prefix)
+% Save each tab in uitabgroup tg as a PNG: <plots_dir>/<prefix>_<tab_title>.png
+    for i = 1:numel(tg.Children)
+        tab = tg.Children(i);
+        tg.SelectedTab = tab;
+        drawnow;
+        safe_title = regexprep(tab.Title, '[^A-Za-z0-9_]', '_');
+        fname = fullfile(plots_dir, sprintf('%s_%s.png', prefix, safe_title));
+        exportgraphics(tab, fname, 'Resolution', 200);
+    end
 end

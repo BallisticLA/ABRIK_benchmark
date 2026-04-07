@@ -4,18 +4,37 @@ Generates and/or plots the six test matrices from the Algorithm 971 paper.
 Usage:
   gen_mat_alg971_paper(10000, 5000, 50, 499, 'generate')
   gen_mat_alg971_paper(10000, 5000, 50, 499, 'plot')
+  gen_mat_alg971_paper(100000, 100000, 5000, 4999, 'generate', 'BlockRows', 1000)
 
 Arguments:
   m                 — number of rows
   n                 — number of columns (and spectrum length)
-  low_rank          — rank parameter k used by generators 2–5 (can equal n for full rank)
+  low_rank          — rank parameter k used by generators 2–5
   plotting_interval — stride for spectrum plot (e.g. 49, 499, 4999)
   operation_mode    — "generate" to build matrices, "plot" to read & plot
 
+Optional name-value:
+  BlockRows         — rows per write block (default 2000). Controls peak
+                      memory usage: full A is never formed; only one block
+                      of size BlockRows×n is held at a time. Tune down for
+                      tight RAM, up for fewer fwrite calls.
+
 Output is saved to:
   ../input_matrices/<m>x<n>_rank_<low_rank>/
+
+Write path: row-blocked GEMM + sprintf/fwrite (much faster than writematrix
+for large matrices). Format is unchanged: space-separated rows, so the C++
+reader in rl_gen.hh::process_input_mat works without modification.
 %}
-function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode)
+function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode, options)
+    arguments
+        m                 (1,1) double
+        n                 (1,1) double
+        low_rank          (1,1) double
+        plotting_interval (1,1) double
+        operation_mode    (1,1) string
+        options.BlockRows (1,1) double = 2000
+    end
 
     script_dir = fileparts(mfilename('fullpath'));
     base_dir   = fullfile(script_dir, '..', 'input_matrices');
@@ -27,10 +46,16 @@ function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode)
 
     if operation_mode == "generate"
 
+        fprintf('Generating U (%d x %d) ...\n', m, n);
         U = randn(m, n);
         [U, ~] = qr(U, 0);
+
+        fprintf('Generating V (%d x %d) ...\n', n, n);
         V = randn(n, n);
         [V, ~] = qr(V, 0);
+
+        % Precompute V' once — reused for all 6 matrices.
+        Vt = V';
 
         Sigma = zeros(6, n);
         Sigma(1, :) = gen_mat_1(n);
@@ -44,11 +69,10 @@ function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode)
             A_file = fullfile(file_path, "ABRIK_test_mat" + i + ".txt");
             S_file = fullfile(file_path, "Spectrum_mat"   + i + ".txt");
 
-            % A = U * diag(Sigma) * V' — avoid forming the n-by-n diagonal matrix.
-            % U .* Sigma scales each column of U by the corresponding singular value.
-            writematrix((U .* Sigma(i, :)) * V', A_file, 'Delimiter', ' ');
+            fprintf('Writing matrix %d to %s ...\n', i, A_file);
+            write_matrix_blocked(A_file, U, Sigma(i, :), Vt, options.BlockRows);
             writematrix(Sigma(i, :), S_file, 'Delimiter', ' ');
-            fprintf("Matrix %d processed\n", i);
+            fprintf('Matrix %d done.\n', i);
         end
 
     elseif operation_mode == "plot"
@@ -62,9 +86,44 @@ function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode)
 end
 
 %% -----------------------------------------------------------------------
-function plot_spectra(Sigma, n, plotting_interval, file_path)
-% Plots all six spectra on a single semilog axis.
+function write_matrix_blocked(filename, U, sigma, Vt, block_rows)
+% Write A = (U .* sigma) * Vt to a space-separated text file, one row per
+% line.  A is never formed in full — only one block of block_rows rows is
+% allocated at a time.
+%
+% sprintf + fwrite is ~5-10x faster than writematrix for large matrices
+% because it builds the whole text block in memory and issues one write.
 
+    [m, n] = size(U);
+
+    % Pre-build format string for one row: "v1 v2 ... vn\n"
+    fmt_row = [repmat('%.17g ', 1, n - 1), '%.17g\n'];
+
+    fid = fopen(filename, 'w');
+    if fid == -1
+        error('Cannot open file for writing: %s', filename);
+    end
+
+    for j1 = 1 : block_rows : m
+        j2 = min(j1 + block_rows - 1, m);
+        B  = j2 - j1 + 1;
+
+        % Compute this block of rows: (B x n) = (B x n) .* sigma  *  (n x n)
+        % Fuse scale + GEMM to avoid a separate B×n allocation for US.
+        Ablock = bsxfun(@times, U(j1:j2, :), sigma) * Vt;  % B × n
+
+        % Build text for all B rows at once.
+        % repmat(fmt_row, 1, B) gives a format for B*n values.
+        % Ablock' is n × B column-major, so sprintf reads it row-by-row of Ablock.
+        str = sprintf(repmat(fmt_row, 1, B), Ablock');
+        fwrite(fid, str, 'char');
+    end
+
+    fclose(fid);
+end
+
+%% -----------------------------------------------------------------------
+function plot_spectra(Sigma, n, plotting_interval, file_path)
     markers = {'-+', '-o', '-s', '-^', '-v', '-diamond'};
     x = 1:plotting_interval:n;
 
@@ -88,13 +147,11 @@ end
 
 %% -----------------------------------------------------------------------
 function Sigma = gen_mat_1(n)
-% sigma_j = 1/j.
     Sigma = 1 ./ (1:n);
 end
 
 %% -----------------------------------------------------------------------
 function Sigma = gen_mat_2(n, k)
-% sigma_1 = 1, sigma_2..k = 2e-5, sigma_{k+1..n} = 1e-5*(k+1)/j.
     j = 1:n;
     Sigma = 1e-5 * (k + 1) ./ j;
     Sigma(1) = 1;
@@ -103,7 +160,6 @@ end
 
 %% -----------------------------------------------------------------------
 function Sigma = gen_mat_3(n, k)
-% Exponential decay to rank k, then 1e-5*(k+1)/j tail.
     j = 1:n;
     Sigma = 1e-5 * (k + 1) ./ j;
     Sigma(1:k) = 10 .^ (-5 * ((1:k) - 1) / (k - 1));
@@ -111,7 +167,6 @@ end
 
 %% -----------------------------------------------------------------------
 function Sigma = gen_mat_4(n, k)
-% Exponential decay to rank k, sigma_{k+1} = 1e-5, then zeros.
     Sigma = zeros(1, n);
     Sigma(1:k) = 10 .^ (-5 * ((1:k) - 1) / (k - 1));
     if k < n
@@ -121,7 +176,6 @@ end
 
 %% -----------------------------------------------------------------------
 function Sigma = gen_mat_5(n, k)
-% Linear decay to rank k, then 1e-5*sqrt((k+1)/j) tail.
     j = 1:n;
     Sigma = 1e-5 * sqrt((k + 1) ./ j);
     Sigma(1:k) = 1e-5 + (1 - 1e-5) * (k - (1:k)) / (k - 1);
