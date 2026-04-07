@@ -4,36 +4,37 @@ Generates and/or plots the six test matrices from the Algorithm 971 paper.
 Usage:
   gen_mat_alg971_paper(10000, 5000, 50, 499, 'generate')
   gen_mat_alg971_paper(10000, 5000, 50, 499, 'plot')
-  gen_mat_alg971_paper(100000, 100000, 5000, 4999, 'generate', 'BlockRows', 1000)
+  gen_mat_alg971_paper(100000, 100000, 5000, 4999, 'generate', 'WriteBinary', true)
 
 Arguments:
   m                 — number of rows
   n                 — number of columns (and spectrum length)
-  low_rank          — rank parameter k used by generators 2–5
+  low_rank          — rank parameter k used by generators 2–5 (can equal n for full rank)
   plotting_interval — stride for spectrum plot (e.g. 49, 499, 4999)
   operation_mode    — "generate" to build matrices, "plot" to read & plot
 
 Optional name-value:
-  BlockRows         — rows per write block (default 2000). Controls peak
-                      memory usage: full A is never formed; only one block
-                      of size BlockRows×n is held at a time. Tune down for
-                      tight RAM, up for fewer fwrite calls.
+  WriteBinary (false) — write .bin instead of .txt. Format: int64 header [m n]
+                        then m*n doubles row-major. Much faster for large matrices
+                        (fwrite, no number-to-string conversion, ~8x smaller files).
+                        Requires ABRIK benchmark from winter-2025-abrik-clean branch;
+                        ext_matrix_io.hh auto-detects .bin and calls read_bin_matrix.
+  BlockRows   (2000)  — rows computed per block (WriteBinary only). Avoids forming
+                        the full m×n matrix; only one (BlockRows × n) slice allocated
+                        at a time.
 
 Output is saved to:
   ../input_matrices/<m>x<n>_rank_<low_rank>/
-
-Write path: row-blocked GEMM + sprintf/fwrite (much faster than writematrix
-for large matrices). Format is unchanged: space-separated rows, so the C++
-reader in rl_gen.hh::process_input_mat works without modification.
 %}
 function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode, options)
     arguments
-        m                 (1,1) double
-        n                 (1,1) double
-        low_rank          (1,1) double
-        plotting_interval (1,1) double
-        operation_mode    (1,1) string
-        options.BlockRows (1,1) double = 2000
+        m                   (1,1) double
+        n                   (1,1) double
+        low_rank            (1,1) double
+        plotting_interval   (1,1) double
+        operation_mode      (1,1) string
+        options.WriteBinary (1,1) logical = false
+        options.BlockRows   (1,1) double  = 2000
     end
 
     script_dir = fileparts(mfilename('fullpath'));
@@ -46,16 +47,10 @@ function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode,
 
     if operation_mode == "generate"
 
-        fprintf('Generating U (%d x %d) ...\n', m, n);
         U = randn(m, n);
         [U, ~] = qr(U, 0);
-
-        fprintf('Generating V (%d x %d) ...\n', n, n);
         V = randn(n, n);
         [V, ~] = qr(V, 0);
-
-        % Precompute V' once — reused for all 6 matrices.
-        Vt = V';
 
         Sigma = zeros(6, n);
         Sigma(1, :) = gen_mat_1(n);
@@ -66,13 +61,21 @@ function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode,
         Sigma(6, :) = sort(abs(randn(1, n)), 'descend');
 
         for i = 1:size(Sigma, 1)
-            A_file = fullfile(file_path, "ABRIK_test_mat" + i + ".txt");
-            S_file = fullfile(file_path, "Spectrum_mat"   + i + ".txt");
+            S_file = fullfile(file_path, "Spectrum_mat" + i + ".txt");
 
-            fprintf('Writing matrix %d to %s ...\n', i, A_file);
-            write_matrix_blocked(A_file, U, Sigma(i, :), Vt, options.BlockRows);
+            if options.WriteBinary
+                A_file = fullfile(file_path, "ABRIK_test_mat" + i + ".bin");
+                write_binary_blocked(A_file, U, Sigma(i, :), V', options.BlockRows);
+            else
+                A_file = fullfile(file_path, "ABRIK_test_mat" + i + ".txt");
+                % writematrix is faster than fprintf-based alternatives for text output.
+                % U .* Sigma scales each column of U by the corresponding singular value,
+                % avoiding an n-by-n diagonal matrix allocation.
+                writematrix((U .* Sigma(i, :)) * V', A_file, 'Delimiter', ' ');
+            end
+
             writematrix(Sigma(i, :), S_file, 'Delimiter', ' ');
-            fprintf('Matrix %d done.\n', i);
+            fprintf("Matrix %d processed\n", i);
         end
 
     elseif operation_mode == "plot"
@@ -86,37 +89,25 @@ function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode,
 end
 
 %% -----------------------------------------------------------------------
-function write_matrix_blocked(filename, U, sigma, Vt, block_rows)
-% Write A = (U .* sigma) * Vt to a space-separated text file, one row per
-% line.  A is never formed in full — only one block of block_rows rows is
-% allocated at a time.
+function write_binary_blocked(filename, U, sigma, Vt, block_rows)
+% Write A = (U .* sigma) * Vt as binary: int64 header [m n] then m*n
+% doubles in row-major order. Full matrix A is never formed — only one
+% block of block_rows rows is allocated at a time.
 %
-% sprintf + fwrite is ~5-10x faster than writematrix for large matrices
-% because it builds the whole text block in memory and issues one write.
+% fwrite(Ablock', 'double') writes Ablock' column-major = Ablock row-major,
+% matching the layout expected by read_bin_matrix in rl_matrix_io.hh.
 
     [m, n] = size(U);
-
-    % Pre-build format string for one row: "v1 v2 ... vn\n"
-    fmt_row = [repmat('%.17g ', 1, n - 1), '%.17g\n'];
-
-    fid = fopen(filename, 'w');
+    fid = fopen(filename, 'wb');
     if fid == -1
         error('Cannot open file for writing: %s', filename);
     end
+    fwrite(fid, int64([m, n]), 'int64');
 
     for j1 = 1 : block_rows : m
-        j2 = min(j1 + block_rows - 1, m);
-        B  = j2 - j1 + 1;
-
-        % Compute this block of rows: (B x n) = (B x n) .* sigma  *  (n x n)
-        % Fuse scale + GEMM to avoid a separate B×n allocation for US.
-        Ablock = bsxfun(@times, U(j1:j2, :), sigma) * Vt;  % B × n
-
-        % Build text for all B rows at once.
-        % repmat(fmt_row, 1, B) gives a format for B*n values.
-        % Ablock' is n × B column-major, so sprintf reads it row-by-row of Ablock.
-        str = sprintf(repmat(fmt_row, 1, B), Ablock');
-        fwrite(fid, str, 'char');
+        j2     = min(j1 + block_rows - 1, m);
+        Ablock = bsxfun(@times, U(j1:j2, :), sigma) * Vt;  % (j2-j1+1) × n
+        fwrite(fid, Ablock', 'double');  % Ablock' col-major = Ablock row-major
     end
 
     fclose(fid);
