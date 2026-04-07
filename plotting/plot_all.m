@@ -14,19 +14,18 @@ plot_abrik_in_tab(tab, results_dir, '20260330_181308_ABRIK_speed_comparisons.csv
 tab = uitab(tg1, 'Title', 'Mat 6 (dense)');
 plot_abrik_in_tab(tab, results_dir, '20260330_181955_ABRIK_speed_comparisons.csv');
 
-% Sparse with CQRRT
-tab = uitab(tg1, 'Title', 'CurlCurl 113k (cqrrt)');
-plot_abrik_in_tab(tab, results_dir, '20260330_183228_ABRIK_speed_comparisons.csv');
+% Sparse (ISAAC Apr 7, CurlCurl_1-4)
+tab = uitab(tg1, 'Title', 'CurlCurl 226k');
+plot_abrik_in_tab(tab, results_dir, '20260406_231506_ABRIK_speed_comparisons.csv');
 
-tab = uitab(tg1, 'Title', 'CurlCurl 226k (cqrrt)');
-plot_abrik_in_tab(tab, results_dir, '20260330_183737_ABRIK_speed_comparisons.csv');
+tab = uitab(tg1, 'Title', 'CurlCurl 807k');
+plot_abrik_in_tab(tab, results_dir, '20260406_231956_ABRIK_speed_comparisons.csv');
 
-% Sparse with GEQRF (no cqrrt)
-tab = uitab(tg1, 'Title', 'CurlCurl 113k (geqrf)');
-plot_abrik_in_tab(tab, results_dir, '20260330_205706_ABRIK_speed_comparisons.csv');
+tab = uitab(tg1, 'Title', 'CurlCurl 1.2M');
+plot_abrik_in_tab(tab, results_dir, '20260406_233250_ABRIK_speed_comparisons.csv');
 
-tab = uitab(tg1, 'Title', 'CurlCurl 226k (geqrf)');
-plot_abrik_in_tab(tab, results_dir, '20260330_210215_ABRIK_speed_comparisons.csv');
+tab = uitab(tg1, 'Title', 'CurlCurl 2.4M');
+plot_abrik_in_tab(tab, results_dir, '20260406_235621_ABRIK_speed_comparisons.csv');
 
 %% === Figure 2: Runtime Breakdowns (tabbed) ===
 fig2 = figure('Name', 'ABRIK Runtime Breakdowns', 'Position', [100 100 1400 600]);
@@ -41,23 +40,21 @@ nexttile(tl);
 abrik_runtime_breakdown(fullfile(results_dir, '20260330_183055_ABRIK_runtime_breakdown.csv'), 'BlockSize', 16);
 set(gca, 'YTickLabel', []); ylabel('');
 
-% Sparse breakdowns with CQRRT
-tab = uitab(tg2, 'Title', 'Sparse (cqrrt)');
-tl = tiledlayout(tab, 1, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+% Sparse breakdowns (ISAAC Apr 7, CurlCurl_1-4)
+tab = uitab(tg2, 'Title', 'Sparse (CurlCurl 1-4)');
+tl = tiledlayout(tab, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 nexttile(tl);
-abrik_runtime_breakdown(fullfile(results_dir, '20260330_184756_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4, 'ShowLegend', false);
+abrik_runtime_breakdown(fullfile(results_dir, '20260407_132601_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4, 'ShowLegend', false);
+title('CurlCurl\_1 (226k)');
 nexttile(tl);
-abrik_runtime_breakdown(fullfile(results_dir, '20260330_184947_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4);
-set(gca, 'YTickLabel', []); ylabel('');
-
-% Sparse breakdowns with GEQRF (no cqrrt)
-tab = uitab(tg2, 'Title', 'Sparse (geqrf)');
-tl = tiledlayout(tab, 1, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+abrik_runtime_breakdown(fullfile(results_dir, '20260407_132751_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4);
+set(gca, 'YTickLabel', []); ylabel(''); title('CurlCurl\_2 (807k)');
 nexttile(tl);
-abrik_runtime_breakdown(fullfile(results_dir, '20260330_211242_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4, 'ShowLegend', false);
+abrik_runtime_breakdown(fullfile(results_dir, '20260407_133229_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4, 'ShowLegend', false);
+title('CurlCurl\_3 (1.2M)');
 nexttile(tl);
-abrik_runtime_breakdown(fullfile(results_dir, '20260330_211439_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4);
-set(gca, 'YTickLabel', []); ylabel('');
+abrik_runtime_breakdown(fullfile(results_dir, '20260407_133931_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4);
+set(gca, 'YTickLabel', []); ylabel(''); title('CurlCurl\_4 (2.4M)');
 
 %% === Figure 3: Per-Triplet Accuracy Analysis (tabbed) ===
 fig3 = figure('Name', 'ABRIK Per-Triplet Accuracy', 'Position', [150 150 1500 600]);

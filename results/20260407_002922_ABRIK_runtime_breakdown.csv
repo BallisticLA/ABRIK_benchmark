@@ -1,0 +1,11 @@
+# ABRIK Runtime Breakdown Benchmark (unified dense/sparse)
+# Precision: double
+# Input matrix: /lustre/isaac24/scratch/mmelnic1/data/ABRIK/CurlCurl_3.mtx
+# Input size: 1219574 x 1219574
+# Format: sparse
+# Block sizes: 
+# Matmul counts: 7, 4, 8, 16, 
+# Runs per configuration: 10
+# Tolerance: 4.94851e-14
+# Timings in microseconds
+b_sz, num_matmuls, allocation_t, get_factors_t, ungqr_t, reorth_t, qr_t, gemm_A_t, main_loop_t, sketching_t, r_cpy_t, s_cpy_t, norm_t, t_rest, total_t
