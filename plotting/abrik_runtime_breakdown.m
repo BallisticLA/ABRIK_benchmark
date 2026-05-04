@@ -62,18 +62,25 @@ function abrik_runtime_breakdown(filename, options)
     %   5:  ungqr_t         → "ORGQR"
     %   6:  reorth_t        → "Reorth"
     %   7:  qr_t            → "QR"
-    %   8:  gemm_A_t        → "GEMM(M)"
-    %   10+11+12+13+14      → "Other" (sketching + copies + norm + rest)
+    %   8:  gemm_A_t        → "GEMM" / "SpMM" (dense/sparse)
+    %   10:                 → "Sketching"
+    %   11+12+13+14         → "Other" (copies + norm + unaccounted rest)
     % Column 9 (main_loop_t) is excluded — it's the aggregate of 3–8.
     total = Data(:, 15);
-    Pct = zeros(num_rows, 7);
-    Pct(:, 1) = 100 * Data(:, 3)           ./ total;  % Data Alloc
-    Pct(:, 2) = 100 * Data(:, 4)           ./ total;  % SVD+Factors
-    Pct(:, 3) = 100 * Data(:, 5)           ./ total;  % ORGQR
-    Pct(:, 4) = 100 * Data(:, 6)           ./ total;  % Reorth
-    Pct(:, 5) = 100 * Data(:, 7)           ./ total;  % QR
-    Pct(:, 6) = 100 * Data(:, 8)           ./ total;  % GEMM(M)
-    Pct(:, 7) = 100 * sum(Data(:, 10:14), 2) ./ total;  % Other
+    Pct = zeros(num_rows, 8);
+    Pct(:, 1) = 100 * Data(:, 3)             ./ total;  % Data Alloc
+    Pct(:, 2) = 100 * Data(:, 4)             ./ total;  % SVD+Factors
+    Pct(:, 3) = 100 * Data(:, 5)             ./ total;  % ORGQR
+    Pct(:, 4) = 100 * Data(:, 6)             ./ total;  % Reorth
+    Pct(:, 5) = 100 * Data(:, 7)             ./ total;  % QR
+    Pct(:, 6) = 100 * Data(:, 8)             ./ total;  % GEMM / SpMM
+    Pct(:, 7) = 100 * Data(:, 10)            ./ total;  % Sketching
+    Pct(:, 8) = 100 * sum(Data(:, 11:14), 2) ./ total;  % Other
+
+    gemm_label = 'GEMM';
+    if meta.is_sparse
+        gemm_label = 'SpMM';
+    end
 
     % ---- Plot stacked bar chart ----
     % Colorblind-safe palette (Wong 2011) for breakdown categories.
@@ -82,7 +89,8 @@ function abrik_runtime_breakdown(filename, options)
               [0.00 0.62 0.45], ...   % ORGQR        — bluish green
               [0.80 0.40 0.00], ...   % Reorth       — vermillion
               [0.35 0.70 0.90], ...   % QR           — sky blue
-              [0.00 0.00 0.00], ...   % GEMM(M)      — black
+              [0.00 0.00 0.00], ...   % GEMM/SpMM    — black
+              [0.95 0.90 0.25], ...   % Sketching    — yellow
               [0.80 0.80 0.80]};      % Other        — light gray
     bplot = bar(Pct, 'stacked');
     for k = 1:numel(colors)
@@ -97,7 +105,7 @@ function abrik_runtime_breakdown(filename, options)
     % ---- Legend & axis formatting ----
     if options.ShowLegend
         lgd = legend('Data Alloc', 'SVD+Factors', 'ORGQR', 'Reorth', ...
-                     'QR', 'GEMM(M)', 'Other', 'Location', 'northeastoutside');
+                     'QR', gemm_label, 'Sketching', 'Other', 'Location', 'northeastoutside');
         lgd.FontSize = 20;
     end
 
@@ -162,7 +170,7 @@ function [num_b_sizes, num_matmul_sizes, num_runs, meta] = parse_metadata(filena
         elseif contains(line, 'Input size:')
             tokens = regexp(line, 'Input size:\s*(.*)', 'tokens');
             meta.input_size = strtrim(tokens{1}{1});
-        elseif contains(line, 'sparse', 'IgnoreCase', true)
+        elseif contains(line, 'Format:') && contains(line, 'sparse', 'IgnoreCase', true)
             meta.is_sparse = true;
         elseif contains(line, 'block sizes:', 'IgnoreCase', true)
             num_b_sizes = count_csv_values(line);

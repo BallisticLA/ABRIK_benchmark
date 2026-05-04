@@ -14,18 +14,18 @@ plot_abrik_in_tab(tab, results_dir, '20260330_181308_ABRIK_speed_comparisons.csv
 tab = uitab(tg1, 'Title', 'Mat 6 (dense)');
 plot_abrik_in_tab(tab, results_dir, '20260330_181955_ABRIK_speed_comparisons.csv');
 
-% Sparse (ISAAC Apr 7, CurlCurl_1-4)
+% Sparse (ISAAC Apr 8, CurlCurl_1-4; CurlCurl_4 from Apr 6 — Apr 8 job timed out before it)
 tab = uitab(tg1, 'Title', 'CurlCurl 226k');
-plot_abrik_in_tab(tab, results_dir, '20260406_231506_ABRIK_speed_comparisons.csv');
+plot_abrik_in_tab(tab, results_dir, '20260407_232915_ABRIK_speed_comparisons.csv');
 
 tab = uitab(tg1, 'Title', 'CurlCurl 807k');
-plot_abrik_in_tab(tab, results_dir, '20260406_231956_ABRIK_speed_comparisons.csv');
+plot_abrik_in_tab(tab, results_dir, '20260407_233355_ABRIK_speed_comparisons.csv');
 
 tab = uitab(tg1, 'Title', 'CurlCurl 1.2M');
-plot_abrik_in_tab(tab, results_dir, '20260406_233250_ABRIK_speed_comparisons.csv');
+plot_abrik_in_tab(tab, results_dir, '20260407_234648_ABRIK_speed_comparisons.csv');
 
 tab = uitab(tg1, 'Title', 'CurlCurl 2.4M');
-plot_abrik_in_tab(tab, results_dir, '20260406_235621_ABRIK_speed_comparisons.csv');
+plot_abrik_in_tab(tab, results_dir, '20260409_122149_ABRIK_speed_comparisons.csv');  % Apr 9 dedicated run
 
 %% === Figure 2: Runtime Breakdowns (tabbed) ===
 fig2 = figure('Name', 'ABRIK Runtime Breakdowns', 'Position', [100 100 1400 600]);
@@ -40,20 +40,20 @@ nexttile(tl);
 abrik_runtime_breakdown(fullfile(results_dir, '20260330_183055_ABRIK_runtime_breakdown.csv'), 'BlockSize', 16);
 set(gca, 'YTickLabel', []); ylabel('');
 
-% Sparse breakdowns (ISAAC Apr 7, CurlCurl_1-4)
+% Sparse breakdowns (ISAAC Apr 8, CurlCurl_1-4)
 tab = uitab(tg2, 'Title', 'Sparse (CurlCurl 1-4)');
 tl = tiledlayout(tab, 2, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 nexttile(tl);
-abrik_runtime_breakdown(fullfile(results_dir, '20260407_132601_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4, 'ShowLegend', false);
+abrik_runtime_breakdown(fullfile(results_dir, '20260408_010540_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4, 'ShowLegend', false);
 title('CurlCurl\_1 (226k)');
 nexttile(tl);
-abrik_runtime_breakdown(fullfile(results_dir, '20260407_132751_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4);
+abrik_runtime_breakdown(fullfile(results_dir, '20260408_010705_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4);
 set(gca, 'YTickLabel', []); ylabel(''); title('CurlCurl\_2 (807k)');
 nexttile(tl);
-abrik_runtime_breakdown(fullfile(results_dir, '20260407_133229_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4, 'ShowLegend', false);
+abrik_runtime_breakdown(fullfile(results_dir, '20260408_011057_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4, 'ShowLegend', false);
 title('CurlCurl\_3 (1.2M)');
 nexttile(tl);
-abrik_runtime_breakdown(fullfile(results_dir, '20260407_133931_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4);
+abrik_runtime_breakdown(fullfile(results_dir, '20260408_030449_ABRIK_runtime_breakdown.csv'), 'BlockSize', 4);
 set(gca, 'YTickLabel', []); ylabel(''); title('CurlCurl\_4 (2.4M)');
 
 %% === Figure 3: Per-Triplet Accuracy Analysis (tabbed) ===
