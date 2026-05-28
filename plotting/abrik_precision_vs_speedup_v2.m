@@ -29,22 +29,27 @@ function abrik_precision_vs_speedup_v2(arg1, arg2, nvargs)
         [T, meta] = parse_abrik_csv(arg1);
     end
 
+    % Reduce across multi-run CSVs to one row per (method, b_sz, total_matvecs).
+    % For single-run (legacy) CSVs this is a no-op: every group has n_runs=1.
+    T = aggregate_abrik_runs(T);
+
     parent = nvargs.Parent;
     if isempty(parent), parent = gcf; end
 
     % 2x1 layout: row 1 = matvecs, row 2 = time
     tl = tiledlayout(parent, 2, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 
-    % Colorblind-safe Wong palette
-    colors = [0.00 0.45 0.70;   % blue      — b=4
-              0.90 0.60 0.00;   % orange    — b=8
-              0.00 0.62 0.45;   % green     — b=16
-              0.80 0.40 0.00;   % vermillon — b=32
-              0.35 0.70 0.90;   % sky blue  (unused for ABRIK)
-              0.80 0.60 0.70];  % purple    (unused)
-    markers  = {'-o', '-s', '-^', '-d'};
-    spectra_color = [0.00 0.00 0.00];  % black
-    rsvd_color    = [0.80 0.60 0.70];  % reddish purple
+    % Colorblind-safe Wong (2011) palette — all 6 below distinguish under
+    % deuteranopia/protanopia/tritanopia.
+    colors = [0.00 0.45 0.70;     % blue          — ABRIK b=4
+              0.90 0.60 0.00;     % orange        — ABRIK b=8
+              0.00 0.62 0.45;     % bluish green  — ABRIK b=16
+              0.80 0.40 0.00;     % vermillion    — ABRIK b=32
+              0.35 0.70 0.90;     % sky blue      (unused)
+              0.80 0.475 0.655];  % reddish purple — RSVD
+    markers       = {'-o', '-s', '-^', '-d'};
+    spectra_color = [0.00 0.00 0.00];      % black
+    rsvd_color    = [0.80 0.475 0.655];    % Wong reddish purple
 
     abrik_bsizes = unique(T.b_sz(T.method == "ABRIK"));
     rsvd_bsizes  = unique(T.b_sz(T.method == "RSVD"));
@@ -58,6 +63,8 @@ function abrik_precision_vs_speedup_v2(arg1, arg2, nvargs)
     ylabel(ax1, 'Digits of accuracy', 'FontSize', 14);
     xlabel(ax1, 'Matrix-vector products', 'FontSize', 14);
     set(ax1, 'XScale', 'log', 'FontSize', 13);
+    mv_ticks = unique(double(T.total_matvecs(T.total_matvecs > 0)));
+    set(ax1, 'XTick', mv_ticks, 'XTickLabel', string(mv_ticks));
 
     % ---- Row 2: digits vs wall-clock time ----
     ax2 = nexttile(tl);
@@ -111,7 +118,7 @@ function [handles, labels] = plot_all_curves(ax, T, abrik_bsizes, largest_rsvd_b
         ci = min(i, size(colors, 1));
         mk = markers{min(i, numel(markers))};
         handles(i) = plot(ax, x, y, mk, 'Color', colors(ci,:), ...
-                          'MarkerFaceColor', colors(ci,:), 'MarkerSize', 8, 'LineWidth', 1.5);
+                          'MarkerSize', 8, 'LineWidth', 1.5);
         labels{i} = sprintf('ABRIK b=%d', b);
     end
 

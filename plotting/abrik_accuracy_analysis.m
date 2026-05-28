@@ -38,7 +38,8 @@ function [] = abrik_accuracy_analysis(csv_path, options)
 
     % --- Parse metadata from # comment lines ---
     fid = fopen(csv_path, 'r');
-    b_sz = 0; num_matmuls = 0; input_matrix = ''; input_size = '';
+    b_sz = 0; num_matmuls = 0; num_runs = 1;
+    input_matrix = ''; input_size = '';
     while true
         line = fgetl(fid);
         if ~startsWith(line, '#'), break; end
@@ -46,6 +47,9 @@ function [] = abrik_accuracy_analysis(csv_path, options)
             b_sz = sscanf(line, '# b_sz: %d');
         elseif contains(line, 'num_matmuls:')
             num_matmuls = sscanf(line, '# num_matmuls: %d');
+        elseif contains(line, 'Num runs:')
+            tok = regexp(line, 'Num runs:\s*(\d+)', 'tokens');
+            if ~isempty(tok), num_runs = str2double(tok{1}{1}); end
         elseif contains(line, 'Input matrix:')
             input_matrix = strtrim(extractAfter(line, 'Input matrix:'));
         elseif contains(line, 'Input size:')
@@ -57,10 +61,29 @@ function [] = abrik_accuracy_analysis(csv_path, options)
     % Extract matrix name from path
     [~, mat_name, ~] = fileparts(input_matrix);
 
-    % --- Read data ---
-    T = readtable(csv_path, 'CommentStyle', '#');
-    T.Properties.VariableNames = {'i', 'res_err_abrik', 'res_err_gesdd', ...
-                                  'sval_diff', 'svec_diff'};
+    % --- Read data (auto-detect legacy 5-col vs new 6-col layout) ---
+    T_raw = readtable(csv_path, 'CommentStyle', '#');
+    if width(T_raw) == 6
+        % New: run, i, res_err_abrik, res_err_gesdd, sval_diff, svec_diff
+        T_raw.Properties.VariableNames = {'run', 'i', 'res_err_abrik', ...
+                                          'res_err_gesdd', 'sval_diff', 'svec_diff'};
+    else
+        % Legacy: i, res_err_abrik, res_err_gesdd, sval_diff, svec_diff
+        T_raw.Properties.VariableNames = {'i', 'res_err_abrik', 'res_err_gesdd', ...
+                                          'sval_diff', 'svec_diff'};
+        T_raw.run = zeros(height(T_raw), 1);
+    end
+
+    % Aggregate across runs: median per triplet i.
+    % For single-run (legacy) CSVs this is a no-op.
+    [G, i_unique] = findgroups(T_raw.i);
+    T = table(i_unique, ...
+              splitapply(@median, T_raw.res_err_abrik, G), ...
+              splitapply(@median, T_raw.res_err_gesdd, G), ...
+              splitapply(@median, T_raw.sval_diff,    G), ...
+              splitapply(@median, T_raw.svec_diff,    G), ...
+              'VariableNames', {'i', 'res_err_abrik', 'res_err_gesdd', ...
+                                'sval_diff', 'svec_diff'});
 
     x = T.i;
     num_triplets = length(x);
@@ -71,6 +94,9 @@ function [] = abrik_accuracy_analysis(csv_path, options)
     T.svec_diff(T.svec_diff == 0)       = NaN;
     T.res_err_abrik(T.res_err_abrik == 0) = NaN;
 
+    % Total matvecs per run (for figure title, replacing the matmuls label).
+    total_matvecs = b_sz * num_matmuls;
+
     % --- Plot ---
     colors = [ ...
         0.00 0.45 0.74;   % blue
@@ -79,7 +105,7 @@ function [] = abrik_accuracy_analysis(csv_path, options)
     ];
 
     if options.CreateFigure
-        fig_name = sprintf('%s (b_{sz} = %d, matmuls = %d)', mat_name, b_sz, num_matmuls);
+        fig_name = sprintf('%s (b_{sz} = %d, matvecs = %d)', mat_name, b_sz, total_matvecs);
         figure('Name', fig_name, 'NumberTitle', 'off', ...
                'Position', [100 100 1400 500]);
     end
@@ -100,17 +126,22 @@ function [] = abrik_accuracy_analysis(csv_path, options)
     if options.ShowLabels
         ylabel('accuracy', 'FontSize', 18);
         xlabel('i', 'FontSize', 18);
-        title(sprintf('ABRIK results (b_{sz} = %d, matmuls = %d)', b_sz, num_matmuls), ...
-              'FontSize', 18);
+        if num_runs > 1
+            title(sprintf('ABRIK results (b_{sz} = %d, matvecs = %d, median over %d runs)', ...
+                          b_sz, total_matvecs, num_runs), 'FontSize', 18);
+        else
+            title(sprintf('ABRIK results (b_{sz} = %d, matvecs = %d)', ...
+                          b_sz, total_matvecs), 'FontSize', 18);
+        end
     end
 
     lgd = legend({ ...
-        'residual\_abrik:  sqrt(||E_L||^2 + ||E_R||^2)', ...
-        'sval\_diff:  |\sigma_{abrik} - \sigma_{gesdd}| / \sigma_{gesdd}', ...
-        'svec\_diff:  \sqrt{(sin^2\angle(u) + sin^2\angle(v))/2}' ...
+        'standard computable error', ...
+        'Singular value error', ...
+        'singular vector errors' ...
         }, ...
         'NumColumns', 1, ...
-        'Location', 'northeastoutside' ...
+        'Location', 'southeast' ...
     );
     lgd.FontSize = 14;
 end

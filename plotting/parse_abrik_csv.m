@@ -1,16 +1,14 @@
 %{
 Parses the ABRIK benchmark CSV (budgeted checkpointing format).
 
-Format:
-  # ... metadata comment lines ...
-  method, b_sz, total_matvecs, err, elapsed_us
-  ABRIK, 4, 4, 1.23e-02, 12345
-  ...
-  Spectra, 0, 4, 4.56e-01, 67890
-  RSVD, 32, 4, 9.99e-01, 11111
-  GESDD, 0, 0, 1.11e-14, 999999
+Supports two CSV column layouts (auto-detected from the header line):
+  Legacy (pre-2026-05-27):
+    method, b_sz, total_matvecs, err, elapsed_us
+  Multi-run (2026-05-27 onward, num_runs CLI arg):
+    run, method, b_sz, total_matvecs, err, elapsed_us
 
 Returns a table T with columns:
+  run           (int64; always present; 0 for legacy single-run files)
   method        (string)
   b_sz          (int64)
   total_matvecs (int64)
@@ -18,7 +16,7 @@ Returns a table T with columns:
   elapsed_us    (int64)
 
 and a meta struct with fields:
-  input_matrix, input_size, target_rank, budget, block_sizes, is_sparse
+  input_matrix, input_size, target_rank, budget, num_runs, block_sizes, is_sparse
 
 Usage:
   [T, meta] = parse_abrik_csv('path/to/file.csv')
@@ -31,6 +29,7 @@ function [T, meta] = parse_abrik_csv(filename)
     meta.input_size   = "";
     meta.target_rank  = 0;
     meta.budget       = 0;
+    meta.num_runs     = 1;
     meta.block_sizes  = [];
     meta.is_sparse    = false;
 
@@ -55,6 +54,9 @@ function [T, meta] = parse_abrik_csv(filename)
         elseif contains(line, 'Budget (total matvecs):')
             tok = regexp(line, 'Budget \(total matvecs\):\s*(\d+)', 'tokens');
             meta.budget = str2double(tok{1}{1});
+        elseif contains(line, 'Num runs:')
+            tok = regexp(line, 'Num runs:\s*(\d+)', 'tokens');
+            meta.num_runs = str2double(tok{1}{1});
         elseif contains(line, 'Block sizes:', 'IgnoreCase', true)
             meta.block_sizes = parse_csv_values(line);
         elseif contains(line, 'sparse', 'IgnoreCase', true)
@@ -62,34 +64,56 @@ function [T, meta] = parse_abrik_csv(filename)
         end
     end
 
-    % ---- Read data rows (skip remaining comment/header lines) ----
+    % ---- Locate header row + detect column layout ----
     fid2 = fopen(filename, 'r');
     if fid2 == -1
         error('parse_abrik_csv:FileNotFound', 'Cannot open: %s', filename);
     end
     cleanup2 = onCleanup(@() fclose(fid2));
 
+    has_run_col = false;
     while ~feof(fid2)
         pos = ftell(fid2);
         line = fgetl(fid2);
         trimmed = strtrim(line);
-        if ~startsWith(trimmed, '#') && ~startsWith(trimmed, 'method')
-            fseek(fid2, pos, 'bof');
+        if startsWith(trimmed, '#'), continue; end
+        if startsWith(trimmed, 'run,') || startsWith(trimmed, 'run ,')
+            has_run_col = true;
             break;
         end
+        if startsWith(trimmed, 'method')
+            has_run_col = false;
+            break;
+        end
+        % unrecognized non-comment line before header (shouldn't happen)
+        fseek(fid2, pos, 'bof');
+        break;
     end
 
-    % Read: method(string), b_sz, total_matvecs, err, elapsed_us
-    C = textscan(fid2, '%s %d %d %f %d', 'Delimiter', ',', 'CollectOutput', false);
+    if has_run_col
+        % run, method, b_sz, total_matvecs, err, elapsed_us
+        C = textscan(fid2, '%d %s %d %d %f %d', 'Delimiter', ',', ...
+                     'CollectOutput', false, 'CommentStyle', '#');
+        run_col       = int64(C{1});
+        methods       = string(C{2});
+        b_sz_col      = int64(C{3});
+        matvecs_col   = int64(C{4});
+        err_col       = C{5};
+        elapsed_col   = int64(C{6});
+    else
+        % method, b_sz, total_matvecs, err, elapsed_us (legacy)
+        C = textscan(fid2, '%s %d %d %f %d', 'Delimiter', ',', ...
+                     'CollectOutput', false, 'CommentStyle', '#');
+        methods       = string(C{1});
+        b_sz_col      = int64(C{2});
+        matvecs_col   = int64(C{3});
+        err_col       = C{4};
+        elapsed_col   = int64(C{5});
+        run_col       = zeros(numel(methods), 1, 'int64');
+    end
 
-    methods       = string(C{1});
-    b_sz_col      = int64(C{2});
-    matvecs_col   = int64(C{3});
-    err_col       = C{4};
-    elapsed_col   = int64(C{5});
-
-    T = table(methods, b_sz_col, matvecs_col, err_col, elapsed_col, ...
-              'VariableNames', {'method', 'b_sz', 'total_matvecs', 'err', 'elapsed_us'});
+    T = table(run_col, methods, b_sz_col, matvecs_col, err_col, elapsed_col, ...
+              'VariableNames', {'run', 'method', 'b_sz', 'total_matvecs', 'err', 'elapsed_us'});
 end
 
 %% -----------------------------------------------------------------------
