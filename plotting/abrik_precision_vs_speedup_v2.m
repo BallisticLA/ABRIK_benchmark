@@ -41,13 +41,19 @@ function abrik_precision_vs_speedup_v2(arg1, arg2, nvargs)
 
     % Colorblind-safe Wong (2011) palette — all 6 below distinguish under
     % deuteranopia/protanopia/tritanopia.
-    colors = [0.00 0.45 0.70;     % blue          — ABRIK b=4
-              0.90 0.60 0.00;     % orange        — ABRIK b=8
-              0.00 0.62 0.45;     % bluish green  — ABRIK b=16
-              0.80 0.40 0.00;     % vermillion    — ABRIK b=32
-              0.35 0.70 0.90;     % sky blue      (unused)
+    % Color/marker slots 1..5 map to sorted abrik_bsizes, so when the sweep
+    % includes b_sz=1 (Bergamo campaign onward) the assignment is
+    %   b=1 → blue/circle, b=4 → orange/square, b=8 → bluish green/triangle,
+    %   b=16 → vermillion/diamond, b=32 → sky blue/down-triangle.
+    % When the sweep is the legacy b_sz ∈ {4, 8, 16, 32}, slot 5 (sky blue,
+    % down-triangle) is simply unused.
+    colors = [0.00 0.45 0.70;     % blue           — slot 1 (smallest ABRIK b)
+              0.90 0.60 0.00;     % orange         — slot 2
+              0.00 0.62 0.45;     % bluish green   — slot 3
+              0.80 0.40 0.00;     % vermillion     — slot 4
+              0.35 0.70 0.90;     % sky blue       — slot 5
               0.80 0.475 0.655];  % reddish purple — RSVD
-    markers       = {'-o', '-s', '-^', '-d'};
+    markers       = {'-o', '-s', '-^', '-d', '-v'};
     spectra_color = [0.00 0.00 0.00];      % black
     rsvd_color    = [0.80 0.475 0.655];    % Wong reddish purple
 
