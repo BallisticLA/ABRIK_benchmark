@@ -24,7 +24,7 @@ Optional name-value:
                         at a time.
 
 Output is saved to:
-  ../input_matrices/<m>x<n>_rank_<low_rank>/
+  ../../matrices/<m>x<n>_rank_<low_rank>/
 %}
 function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode, options)
     arguments
@@ -38,7 +38,7 @@ function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode,
     end
 
     script_dir = fileparts(mfilename('fullpath'));
-    base_dir   = fullfile(script_dir, '..', 'input_matrices');
+    base_dir   = fullfile(script_dir, '..', '..', 'matrices');
     sub_dir    = sprintf("%dx%d_rank_%d", m, n, low_rank);
     file_path  = fullfile(base_dir, sub_dir);
     if ~exist(file_path, 'dir')
@@ -78,6 +78,22 @@ function gen_mat_alg971_paper(m, n, low_rank, plotting_interval, operation_mode,
             fprintf("Matrix %d processed\n", i);
         end
 
+    elseif operation_mode == "spectra"
+        % 2026-08-04: compute the six analytic spectra and plot, forming NO
+        % matrices. The spectra are closed-form (gen_mat_1..6 below), so the
+        % spectra figure never needs the 10k x 10k factors regenerated.
+        Sigma = zeros(6, n);
+        Sigma(1, :) = gen_mat_1(n);
+        Sigma(2, :) = gen_mat_2(n, low_rank);
+        Sigma(3, :) = gen_mat_3(n, low_rank);
+        Sigma(4, :) = gen_mat_4(n, low_rank);
+        Sigma(5, :) = gen_mat_5(n, low_rank);
+        % Matrix 6's spectrum is a random draw, sort(abs(randn)), not a closed
+        % form. Seeded here so the spectra figure is reproducible; at n = 1e4 the
+        % order statistics are so concentrated that any draw looks the same.
+        rng(0, 'twister');
+        Sigma(6, :) = sort(abs(randn(1, n)), 'descend');
+
     elseif operation_mode == "plot"
         Sigma = zeros(6, n);
         for i = 1:6
@@ -115,18 +131,23 @@ end
 
 %% -----------------------------------------------------------------------
 function plot_spectra(Sigma, n, plotting_interval, file_path)
+% 2026-08-04 (Max, Rob red 592): plot only Mat 1 and Mat 6, the two matrices the
+% paper actually uses (fastest- and slowest-decaying spectra). The other four are
+% still generated and still written to Spectrum_mat*.txt; they are simply not
+% drawn. Set SHOW = 1:6 to restore the full six-curve version.
+    SHOW = [1 6];
     markers = {'-+', '-o', '-s', '-^', '-v', '-diamond'};
     x = 1:plotting_interval:n;
 
-    for i = 1:size(Sigma, 1)
+    for i = SHOW
         semilogy(x, Sigma(i, 1:plotting_interval:end), markers{i}, ...
                  'MarkerSize', 18, 'LineWidth', 1.8);
         hold on;
     end
 
     grid on;
-    lgd = legend('Mat 1', 'Mat 2', 'Mat 3', 'Mat 4', 'Mat 5', 'Mat 6', ...
-                 'NumColumns', 2, 'Location', 'northeastoutside');
+    lgd = legend(arrayfun(@(i) sprintf('Mat %d', i), SHOW, 'UniformOutput', false), ...
+                 'NumColumns', 1, 'Location', 'northeast');
     lgd.FontSize = 20;
     ax = gca;
     ax.XAxis.FontSize = 20;
@@ -134,6 +155,7 @@ function plot_spectra(Sigma, n, plotting_interval, file_path)
     xticks(round(linspace(0, n, 6)));
 
     saveas(gcf, fullfile(file_path, 'generated_matrices_spectra_plots.fig'));
+    exportgraphics(gcf, fullfile(file_path, 'generated_matrices_spectra_plots.png'), 'Resolution', 300);
 end
 
 %% -----------------------------------------------------------------------

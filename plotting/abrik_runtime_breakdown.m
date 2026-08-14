@@ -104,14 +104,11 @@ function abrik_runtime_breakdown(filename, options)
 
     % ---- Legend & axis formatting ----
     if options.ShowLegend
-        lgd = legend('Data Alloc', 'SVD+Factors', 'ORGQR', 'Reorth', ...
-                     'QR', gemm_label, 'Sketching', 'Other', 'Location', 'northeastoutside');
-        lgd.FontSize = 20;
+        legend('Data Alloc', 'SVD+Factors', 'ORGQR', 'Reorth', ...
+               'QR', gemm_label, 'Sketching', 'Other', 'Location', 'northeastoutside');
     end
 
     ylim([0 100]);
-    ax = gca;
-    ax.FontSize = 23;
 
     if options.ShowLabels
         % Build informative title: matrix name | size | dense/sparse | b_sz
@@ -129,9 +126,9 @@ function abrik_runtime_breakdown(filename, options)
             title_parts{end+1} = 'dense';
         end
         title_parts{end+1} = sprintf('b = %d', b_sz_show);
-        title(strjoin(title_parts, '  |  '), 'FontSize', 16, 'Interpreter', 'none');
-        ylabel('Runtime %', 'FontSize', 20);
-        xlabel('Matrix-vector products', 'FontSize', 20);
+        title(strjoin(title_parts, '  |  '), 'Interpreter', 'none');
+        ylabel('Runtime %');
+        xlabel('Matrix-vector products');
     end
 end
 
@@ -198,21 +195,31 @@ function n = count_csv_values(line)
 end
 
 %% -----------------------------------------------------------------------
-function Data_out = select_best_runs(Data_in, num_b_sizes, num_matmul_sizes, num_runs)
-% For each (b_sz, num_matmuls) configuration, keep the run with the
-% fastest total time (col 15).  All breakdown columns come from the same
-% run to keep percentages self-consistent.
+function Data_out = select_best_runs(Data_in, ~, ~, ~)
+% For each (b_sz, num_matmuls) configuration present in the data, keep the
+% run with the fastest total time (col 15).  All breakdown columns come from
+% the same run to keep percentages self-consistent.
 %
-% Input:  (num_b_sizes * num_matmul_sizes * num_runs) x 15 matrix.
-% Output: (num_b_sizes * num_matmul_sizes)            x 15 matrix.
+% Grouping is driven by the unique (b_sz, num_matmuls) pairs in the data
+% itself, not by row-index arithmetic against the metadata-declared sweep
+% size.  This tolerates partial / truncated files — e.g. a sweep cancelled
+% mid-run (missing block sizes, an incomplete run triple) — instead of
+% indexing off the end.  For a complete file the result is identical to the
+% old row-index version (same configs, same fastest-run pick).
+%
+% The trailing count args (num_b_sizes, num_matmul_sizes, num_runs) are
+% accepted for call-site compatibility but no longer used.
+%
+% Input:  N x 15 matrix (any number of runs per config, possibly partial).
+% Output: M x 15 matrix, one row per unique (b_sz, num_matmuls) pair.
 
-    num_configs = num_b_sizes * num_matmul_sizes;
+    [~, ~, grp] = unique(Data_in(:, 1:2), 'rows', 'stable');
+    num_configs = max(grp);
     num_cols    = size(Data_in, 2);
     Data_out    = zeros(num_configs, num_cols);
 
     for cfg = 1:num_configs
-        rows  = (cfg - 1) * num_runs + 1 : cfg * num_runs;
-        block = Data_in(rows, :);
+        block = Data_in(grp == cfg, :);
 
         % Pick the run with the shortest nonzero total_t (col 15).
         nonzero = block(:, 15) > 0;

@@ -3,6 +3,7 @@ function [] = abrik_accuracy_analysis(csv_path, options)
         csv_path = ''
         options.CreateFigure (1,1) logical = true
         options.ShowLabels (1,1) logical = true
+        options.ShowLegend (1,1) logical = true
     end
 % ABRIK_ACCURACY_ANALYSIS  Plot per-triplet accuracy metrics from
 % ABRIK_accuracy_analysis benchmark output.
@@ -63,7 +64,13 @@ function [] = abrik_accuracy_analysis(csv_path, options)
 
     % --- Read data (auto-detect legacy 5-col vs new 6-col layout) ---
     T_raw = readtable(csv_path, 'CommentStyle', '#');
-    if width(T_raw) == 6
+    if width(T_raw) == 10
+        % b38ca8e (2026-08-03): + Rob/Tropp-Webber eq.(6.1) and Hartwig/Tomas
+        % eq.(14) metric columns (C4 of abrik-paper-open-questions).
+        T_raw.Properties.VariableNames = {'run', 'i', 'res_err_abrik', ...
+            'res_err_gesdd', 'sval_diff', 'svec_diff', ...
+            'res_sw_abrik', 'res_sw_gesdd', 'res_1s_abrik', 'res_1s_gesdd'};
+    elseif width(T_raw) == 6
         % New: run, i, res_err_abrik, res_err_gesdd, sval_diff, svec_diff
         T_raw.Properties.VariableNames = {'run', 'i', 'res_err_abrik', ...
                                           'res_err_gesdd', 'sval_diff', 'svec_diff'};
@@ -84,6 +91,11 @@ function [] = abrik_accuracy_analysis(csv_path, options)
               splitapply(@median, T_raw.svec_diff,    G), ...
               'VariableNames', {'i', 'res_err_abrik', 'res_err_gesdd', ...
                                 'sval_diff', 'svec_diff'});
+    has_c4 = ismember('res_1s_abrik', T_raw.Properties.VariableNames);
+    if has_c4
+        T.res_1s_abrik = splitapply(@median, T_raw.res_1s_abrik, G);
+        T.res_sw_abrik = splitapply(@median, T_raw.res_sw_abrik, G);
+    end
 
     x = T.i;
     num_triplets = length(x);
@@ -114,34 +126,40 @@ function [] = abrik_accuracy_analysis(csv_path, options)
     hold on
     semilogy(x, T.sval_diff,      '-x', 'Color', colors(2,:), 'MarkerSize', 5, 'LineWidth', 1.5);
     semilogy(x, T.svec_diff,      '-d', 'Color', colors(3,:), 'MarkerSize', 4, 'LineWidth', 1.5);
+    % C4 overlay (2026-08-03, Max): Rob's and Hartwig's metrics INTEGRATED into
+    % this figure (not a standalone panel); drawn only when the CSV carries them.
+    if has_c4
+        semilogy(x, T.res_1s_abrik, '--', 'Color', [0.85 0.33 0.10], 'LineWidth', 1.5);
+        semilogy(x, T.res_sw_abrik, ':',  'Color', [0.47 0.67 0.19], 'LineWidth', 1.8);
+    end
     hold off
 
-    ax = gca;
-    ax.XAxis.FontSize = 16;
-    ax.YAxis.FontSize = 16;
     grid on
 
     xlim([1 num_triplets]);
 
     if options.ShowLabels
-        ylabel('accuracy', 'FontSize', 18);
-        xlabel('i', 'FontSize', 18);
+        ylabel('accuracy');
+        xlabel('i');
         if num_runs > 1
             title(sprintf('ABRIK results (b_{sz} = %d, matvecs = %d, median over %d runs)', ...
-                          b_sz, total_matvecs, num_runs), 'FontSize', 18);
+                          b_sz, total_matvecs, num_runs));
         else
             title(sprintf('ABRIK results (b_{sz} = %d, matvecs = %d)', ...
-                          b_sz, total_matvecs), 'FontSize', 18);
+                          b_sz, total_matvecs));
         end
     end
 
-    lgd = legend({ ...
-        'standard computable error', ...
-        'Singular value error', ...
-        'singular vector errors' ...
-        }, ...
-        'NumColumns', 1, ...
-        'Location', 'southeast' ...
-    );
-    lgd.FontSize = 14;
+    leg = {'standard computable error (eq. 2.4)', ...
+           'Singular value error', ...
+           'singular vector errors'};
+    if has_c4
+        leg{end+1} = 'Hartwig/Tomas eq.(14): 1-sided normalized';
+        leg{end+1} = 'Rob/Tropp-Webber eq.(6.1): 2-sided unstandardized';
+    end
+    % 2026-08-04 (Max): bottom-right, and only ONE legend per figure (the two
+    % panels share the same five series), so it never covers the curves.
+    if options.ShowLegend
+        legend(leg, 'NumColumns', 1, 'Location', 'southeast');
+    end
 end

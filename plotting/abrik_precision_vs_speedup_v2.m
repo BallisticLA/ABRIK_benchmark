@@ -31,7 +31,10 @@ function abrik_precision_vs_speedup_v2(arg1, arg2, nvargs)
 
     % Reduce across multi-run CSVs to one row per (method, b_sz, total_matvecs).
     % For single-run (legacy) CSVs this is a no-op: every group has n_runs=1.
-    T = aggregate_abrik_runs(T);
+    % Time uses best-of-N (min): timing noise only ever adds wall-clock, so the
+    % minimum is the cleanest cost estimate and matches the breakdown plot's
+    % select_best_runs. Err stays median (robust to occasional RNG spikes).
+    T = aggregate_abrik_runs(T, 'TimeReduction', 'min');
 
     parent = nvargs.Parent;
     if isempty(parent), parent = gcf; end
@@ -66,26 +69,39 @@ function abrik_precision_vs_speedup_v2(arg1, arg2, nvargs)
     hold(ax1, 'on'); grid(ax1, 'on');
     plot_all_curves(ax1, T, abrik_bsizes, largest_rsvd_b, ...
                     colors, markers, spectra_color, rsvd_color, 'matvecs');
-    ylabel(ax1, 'Digits of accuracy', 'FontSize', 14);
-    xlabel(ax1, 'Matrix-vector products', 'FontSize', 14);
-    set(ax1, 'XScale', 'log', 'FontSize', 13);
+    ylabel(ax1, 'Digits of accuracy');
+    xlabel(ax1, 'Matrix-vector products');
+    set(ax1, 'XScale', 'log');
     mv_ticks = unique(double(T.total_matvecs(T.total_matvecs > 0)));
-    set(ax1, 'XTick', mv_ticks, 'XTickLabel', string(mv_ticks));
+    % Paper polish (2026-08-03): on a log axis, adjacent checkpoint labels
+    % collide when their ratio is small (e.g. 16384 next to 20000). Keep every
+    % tick mark but blank the EARLIER label of any pair closer than 1.25x.
+    mv_labels = string(mv_ticks);
+    for ti = 1:numel(mv_ticks)-1
+        if mv_ticks(ti+1) / mv_ticks(ti) < 1.25, mv_labels(ti) = ""; end
+    end
+    set(ax1, 'XTick', mv_ticks, 'XTickLabel', mv_labels);
 
     % ---- Row 2: digits vs wall-clock time ----
     ax2 = nexttile(tl);
     hold(ax2, 'on'); grid(ax2, 'on');
     [h_handles, leg_labels] = plot_all_curves(ax2, T, abrik_bsizes, largest_rsvd_b, ...
                     colors, markers, spectra_color, rsvd_color, 'time');
-    ylabel(ax2, 'Digits of accuracy', 'FontSize', 14);
-    xlabel(ax2, 'Time (s)', 'FontSize', 14);
-    set(ax2, 'XScale', 'log', 'FontSize', 13);
+    ylabel(ax2, 'Digits of accuracy');
+    xlabel(ax2, 'Time (s)');
+    set(ax2, 'XScale', 'log');
 
-    % Shared legend on bottom subplot
-    legend(ax2, h_handles, leg_labels, 'Location', 'southeast', 'FontSize', 11);
+    % Shared legend on the TOP subplot, north-west (2026-08-04, Max: it must not
+    % cover the data; digits-of-accuracy curves rise to the right, so the upper
+    % left is the empty corner in both panels).
+    legend(ax1, h_handles, leg_labels, 'Location', 'northwest');
 
-    % Uniform y-axis (digits) across both subplots
-    all_err = T.err(T.err > 0 & isfinite(T.err));
+    % Uniform y-axis (digits) across both subplots. Exclude the exact GESDD
+    % reference (err ~ eps, not drawn as a curve) from the range, so the axis fits
+    % the plotted methods; otherwise a full-SVD reference stretches the axis toward
+    % ~16 digits and flattens adversarial cases where the methods reach only a
+    % couple of digits.
+    all_err = T.err(T.err > 0 & isfinite(T.err) & T.method ~= "GESDD");
     if ~isempty(all_err)
         yl = [max(-0.5, min(log10(1 ./ all_err)) - 0.5), ...
               max(log10(1 ./ all_err)) + 0.5];
@@ -105,7 +121,7 @@ function abrik_precision_vs_speedup_v2(arg1, arg2, nvargs)
     if meta.budget > 0
         title_parts{end+1} = sprintf('budget=%d mv', meta.budget);
     end
-    title(tl, strjoin(title_parts, '  |  '), 'FontSize', 14, 'Interpreter', 'none');
+    title(tl, strjoin(title_parts, '  |  '), 'FontSize', 19, 'Interpreter', 'none');
 end
 
 %% -----------------------------------------------------------------------
@@ -124,7 +140,7 @@ function [handles, labels] = plot_all_curves(ax, T, abrik_bsizes, largest_rsvd_b
         ci = min(i, size(colors, 1));
         mk = markers{min(i, numel(markers))};
         handles(i) = plot(ax, x, y, mk, 'Color', colors(ci,:), ...
-                          'MarkerSize', 8, 'LineWidth', 1.5);
+                          'MarkerSize', 8);
         labels{i} = sprintf('ABRIK b=%d', b);
     end
 
@@ -134,7 +150,7 @@ function [handles, labels] = plot_all_curves(ax, T, abrik_bsizes, largest_rsvd_b
     [x, y] = curve_xy(rows, mode);
     n_abrik = numel(abrik_bsizes);
     handles(n_abrik + 1) = plot(ax, x, y, '-p', 'Color', spectra_color, ...
-                                'MarkerFaceColor', spectra_color, 'MarkerSize', 8, 'LineWidth', 1.5);
+                                'MarkerFaceColor', spectra_color, 'MarkerSize', 8);
     labels{n_abrik + 1} = 'Spectra';
 
     % RSVD (largest block size)
@@ -142,7 +158,7 @@ function [handles, labels] = plot_all_curves(ax, T, abrik_bsizes, largest_rsvd_b
     rows = sortrows(rows, 'total_matvecs');
     [x, y] = curve_xy(rows, mode);
     handles(n_abrik + 2) = plot(ax, x, y, '--v', 'Color', rsvd_color, ...
-                                'MarkerFaceColor', rsvd_color, 'MarkerSize', 8, 'LineWidth', 1.5);
+                                'MarkerFaceColor', rsvd_color, 'MarkerSize', 8);
     labels{n_abrik + 2} = sprintf('RSVD b=%d', largest_rsvd_b);
 end
 
