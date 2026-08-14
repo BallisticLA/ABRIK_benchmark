@@ -1,2 +1,18 @@
+# Large input matrices (SuiteSparse downloads + generator outputs; regenerate via
+# utils/generators/ or re-download from https://sparse.tamu.edu/)
+/matrices/*
+
+# Legacy directory names, kept so an older checkout cannot suddenly start tracking them
 /input_matrices/*
 /output_matrices/*
+
+# Exported figures are regenerable from results/ via run_all.m (active-repo data policy:
+# results/ CSVs are tracked as the paper record; figures are not).
+# Convention: agent-workspace randnla/reference/matlab-benchmark-repo-layout.md
+/figures/
+
+# MATLAB editor autosaves
+*.asv
+
+# Windows NTFS alternate-data-stream artifacts
+*:Zone.Identifier
