@@ -72,6 +72,8 @@ function [T, meta] = parse_abrik_csv(filename)
     cleanup2 = onCleanup(@() fclose(fid2));
 
     has_run_col = false;
+    has_actual_col = false;   % 2026-08 schema adds actual_matvecs after total_matvecs
+    has_kres_col   = false;   % 2026-09 schema appends k_res and status after elapsed_us
     while ~feof(fid2)
         pos = ftell(fid2);
         line = fgetl(fid2);
@@ -79,6 +81,12 @@ function [T, meta] = parse_abrik_csv(filename)
         if startsWith(trimmed, '#'), continue; end
         if startsWith(trimmed, 'run,') || startsWith(trimmed, 'run ,')
             has_run_col = true;
+            % The reader below is POSITIONAL, so a new column is not backward compatible
+            % by accident: reading a 7-field row with a 6-specifier format would slide
+            % actual_matvecs into err and truncate err into elapsed_us, silently, with no
+            % error and wrong figures. Detect the schema from the header instead.
+            has_actual_col = contains(line, 'actual_matvecs');
+            has_kres_col   = contains(line, 'k_res');
             break;
         end
         if startsWith(trimmed, 'method')
@@ -90,7 +98,32 @@ function [T, meta] = parse_abrik_csv(filename)
         break;
     end
 
-    if has_run_col
+    if has_run_col && has_kres_col
+        % run, method, b_sz, total_matvecs, actual_matvecs, err, elapsed_us, k_res, status
+        % k_res = triplets the residual covers; status = why BK stopped (ABRIK) or done/failed.
+        C = textscan(fid2, '%d %s %d %d %d %f %d %d %s', 'Delimiter', ',', ...
+                     'CollectOutput', false, 'CommentStyle', '#');
+        run_col       = int64(C{1});
+        methods       = string(C{2});
+        b_sz_col      = int64(C{3});
+        matvecs_col   = int64(C{4});
+        actual_col    = int64(C{5});
+        err_col       = C{6};
+        elapsed_col   = int64(C{7});
+        k_res_col     = int64(C{8});
+        status_col    = strtrim(string(C{9}));
+    elseif has_run_col && has_actual_col
+        % run, method, b_sz, total_matvecs, actual_matvecs, err, elapsed_us
+        C = textscan(fid2, '%d %s %d %d %d %f %d', 'Delimiter', ',', ...
+                     'CollectOutput', false, 'CommentStyle', '#');
+        run_col       = int64(C{1});
+        methods       = string(C{2});
+        b_sz_col      = int64(C{3});
+        matvecs_col   = int64(C{4});
+        actual_col    = int64(C{5});
+        err_col       = C{6};
+        elapsed_col   = int64(C{7});
+    elseif has_run_col
         % run, method, b_sz, total_matvecs, err, elapsed_us
         C = textscan(fid2, '%d %s %d %d %f %d', 'Delimiter', ',', ...
                      'CollectOutput', false, 'CommentStyle', '#');
@@ -100,6 +133,7 @@ function [T, meta] = parse_abrik_csv(filename)
         matvecs_col   = int64(C{4});
         err_col       = C{5};
         elapsed_col   = int64(C{6});
+        actual_col    = matvecs_col;   % pre-2026-08 files: no separate measurement
     else
         % method, b_sz, total_matvecs, err, elapsed_us (legacy)
         C = textscan(fid2, '%s %d %d %f %d', 'Delimiter', ',', ...
@@ -110,10 +144,21 @@ function [T, meta] = parse_abrik_csv(filename)
         err_col       = C{4};
         elapsed_col   = int64(C{5});
         run_col       = zeros(numel(methods), 1, 'int64');
+        actual_col    = matvecs_col;   % legacy files: no separate measurement
     end
 
-    T = table(run_col, methods, b_sz_col, matvecs_col, err_col, elapsed_col, ...
-              'VariableNames', {'run', 'method', 'b_sz', 'total_matvecs', 'err', 'elapsed_us'});
+    % actual_matvecs is always present in the returned table, equal to total_matvecs for
+    % files written before the column existed, so downstream code can read it
+    % unconditionally. Spectra rows, and RSVD rows in 2026-09 files, differ from it.
+    % k_res and status are likewise always present: -1 and "" for files that predate them.
+    if ~exist('k_res_col', 'var')
+        k_res_col  = -ones(numel(methods), 1, 'int64');
+        status_col = strings(numel(methods), 1);
+    end
+    T = table(run_col, methods, b_sz_col, matvecs_col, actual_col, err_col, elapsed_col, ...
+              k_res_col, status_col, ...
+              'VariableNames', {'run', 'method', 'b_sz', 'total_matvecs', ...
+                                'actual_matvecs', 'err', 'elapsed_us', 'k_res', 'status'});
 end
 
 %% -----------------------------------------------------------------------
