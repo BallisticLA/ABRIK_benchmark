@@ -136,7 +136,10 @@ function [handles, labels] = plot_all_curves(ax, T, abrik_bsizes, largest_rsvd_b
         b = abrik_bsizes(i);
         rows = T(T.method == "ABRIK" & T.b_sz == b, :);
         rows = sortrows(rows, 'total_matvecs');
-        [x, y] = curve_xy(rows, mode);
+        % ABRIK is drawn at the matvecs it spent: 2026-09 files record the checkpoint budget
+        % in total_matvecs and the spent count in actual_matvecs, which differ when BK
+        % stopped before the checkpoint (older files hold the spent count in both).
+        [x, y] = curve_xy(rows, mode, 'actual_matvecs');
         ci = min(i, size(colors, 1));
         mk = markers{min(i, numel(markers))};
         handles(i) = plot(ax, x, y, mk, 'Color', colors(ci,:), ...
@@ -163,13 +166,15 @@ function [handles, labels] = plot_all_curves(ax, T, abrik_bsizes, largest_rsvd_b
 end
 
 %% -----------------------------------------------------------------------
-function [x, y] = curve_xy(rows, mode)
+function [x, y] = curve_xy(rows, mode, xcol)
 % Returns (x, y) for a convergence curve. Skips rows with err <= 0 or non-finite.
+% xcol names the matvec column used on the x axis (default total_matvecs).
+    if nargin < 3, xcol = 'total_matvecs'; end
     mask = rows.err > 0 & isfinite(rows.err);
     rows = rows(mask, :);
     y = log10(1 ./ rows.err);
     if strcmp(mode, 'matvecs')
-        x = double(rows.total_matvecs);
+        x = double(rows.(xcol));
     else
         x = double(rows.elapsed_us) / 1e6;  % microseconds -> seconds
     end

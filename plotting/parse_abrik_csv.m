@@ -101,7 +101,7 @@ function [T, meta] = parse_abrik_csv(filename)
     if has_run_col && has_kres_col
         % run, method, b_sz, total_matvecs, actual_matvecs, err, elapsed_us, k_res, status
         % k_res = triplets the residual covers; status = why BK stopped (ABRIK) or done/failed.
-        C = textscan(fid2, '%d %s %d %d %d %f %d %d %s', 'Delimiter', ',', ...
+        C = textscan(fid2, '%d %s %d %d %d %f %d64 %d %s', 'Delimiter', ',', ...
                      'CollectOutput', false, 'CommentStyle', '#');
         run_col       = int64(C{1});
         methods       = string(C{2});
@@ -114,7 +114,7 @@ function [T, meta] = parse_abrik_csv(filename)
         status_col    = strtrim(string(C{9}));
     elseif has_run_col && has_actual_col
         % run, method, b_sz, total_matvecs, actual_matvecs, err, elapsed_us
-        C = textscan(fid2, '%d %s %d %d %d %f %d', 'Delimiter', ',', ...
+        C = textscan(fid2, '%d %s %d %d %d %f %d64', 'Delimiter', ',', ...
                      'CollectOutput', false, 'CommentStyle', '#');
         run_col       = int64(C{1});
         methods       = string(C{2});
@@ -125,7 +125,7 @@ function [T, meta] = parse_abrik_csv(filename)
         elapsed_col   = int64(C{7});
     elseif has_run_col
         % run, method, b_sz, total_matvecs, err, elapsed_us
-        C = textscan(fid2, '%d %s %d %d %f %d', 'Delimiter', ',', ...
+        C = textscan(fid2, '%d %s %d %d %f %d64', 'Delimiter', ',', ...
                      'CollectOutput', false, 'CommentStyle', '#');
         run_col       = int64(C{1});
         methods       = string(C{2});
@@ -136,7 +136,7 @@ function [T, meta] = parse_abrik_csv(filename)
         actual_col    = matvecs_col;   % pre-2026-08 files: no separate measurement
     else
         % method, b_sz, total_matvecs, err, elapsed_us (legacy)
-        C = textscan(fid2, '%s %d %d %f %d', 'Delimiter', ',', ...
+        C = textscan(fid2, '%s %d %d %f %d64', 'Delimiter', ',', ...
                      'CollectOutput', false, 'CommentStyle', '#');
         methods       = string(C{1});
         b_sz_col      = int64(C{2});
