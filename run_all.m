@@ -206,14 +206,17 @@ ylabel(tl_sw, 'Runtime %', 'FontSize', 20);
 %  the 07-30/08-03 clean-harness rerun below and rendered identically; keep only
 %  the new results. CSVs retained in results/.)
 
-%% === Figure 3b: Per-Triplet Accuracy, 2026-07-30 rebuilt campaign ===
-% Same layout as Figure 3; three-metric svd_residual variant (@2b9b388), num_runs=5.
+%% === Figure 3b: Per-Triplet Accuracy, 2026-10-05 campaign (5583168) ===
+% Same layout as Figure 3; three-metric svd_residual variant, num_runs=5.
+% 2026-10-08 (Rob): singular value error drawn as sqrt(s^2 - shat^2)/s (the
+% plotter's default 'pythagorean' SvalMetric). mat1/mat6 rows byte-identical to
+% the 20260803 CSVs.
 fig3b = figure('Name', 'ABRIK Per-Triplet Accuracy (dense)', 'Position', [170 170 1200 960]);
 tl3b = tiledlayout(fig3b, 2, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 nexttile(tl3b);
-abrik_accuracy_analysis(fullfile(results_dir, '20260803_150417_ABRIK_accuracy_analysis.csv'), 'CreateFigure', false);
+abrik_accuracy_analysis(fullfile(results_dir, '20261005_221029_ABRIK_accuracy_analysis.csv'), 'CreateFigure', false);
 nexttile(tl3b);
-abrik_accuracy_analysis(fullfile(results_dir, '20260803_150548_ABRIK_accuracy_analysis.csv'), 'CreateFigure', false, 'ShowLegend', false);
+abrik_accuracy_analysis(fullfile(results_dir, '20261005_221159_ABRIK_accuracy_analysis.csv'), 'CreateFigure', false, 'ShowLegend', false);
 
 
 %% (Figure 3c RETIRED 2026-08-03, Max: the C4 metric curves are integrated
@@ -227,7 +230,8 @@ abrik_accuracy_analysis(fullfile(results_dir, '20260803_150548_ABRIK_accuracy_an
 % reference. This is where the one-sided metric fails hardest.
 fig3c = figure('Name', 'ABRIK Per-Triplet Accuracy (CurlCurl\_0)', 'Position', [190 190 1200 560]);
 ax3c = axes('Parent', fig3c); %#ok<NASGU>
-abrik_accuracy_analysis(fullfile(results_dir, '20260811_103040_ABRIK_accuracy_analysis_CurlCurl_0.csv'), 'CreateFigure', false);
+% 2026-10-08: 2026-10-05 campaign (5583168), 5 runs (the 20260811 CSV had 3).
+abrik_accuracy_analysis(fullfile(results_dir, '20261005_221330_ABRIK_accuracy_analysis_CurlCurl_0.csv'), 'CreateFigure', false);
 
 %% === Figure 4: Adversarial hard instance (Wishart lower bound) ===
 % Gapless spectrum sigma_i = sqrt(1 - (i/n)^2), n = 1000. Two budgets:

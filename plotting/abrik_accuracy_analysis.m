@@ -4,14 +4,25 @@ function [] = abrik_accuracy_analysis(csv_path, options)
         options.CreateFigure (1,1) logical = true
         options.ShowLabels (1,1) logical = true
         options.ShowLegend (1,1) logical = true
+        options.SvalMetric (1,1) string {mustBeMember(options.SvalMetric, ["pythagorean", "relative"])} = "pythagorean"
     end
 % ABRIK_ACCURACY_ANALYSIS  Plot per-triplet accuracy metrics from
 % ABRIK_accuracy_analysis benchmark output.
 %
 % Produces a semilogy plot with three series:
 %   1. Per-triplet SVD residual for ABRIK (blue circles)
-%   2. Relative singular value difference (yellow crosses)
+%   2. Singular value error (yellow crosses), see 'SvalMetric' below
 %   3. Singular vector angular difference via QR-based sin(angle) (purple diamonds)
+%
+% Singular value error (2026-10-08, Rob): the default 'pythagorean' series is
+%   sqrt(s_i^2 - shat_i^2) / s_i,   s_i from GESDD, shat_i from ABRIK,
+% which is linear in the residual, so it lines up with series 1. The old
+% 'relative' series |shat_i - s_i| / s_i is quadratic in the residual and sat
+% orders of magnitude below it on unconverged triplets. CSVs that predate the
+% sval_pyth column are converted from sval_diff = |shat - s| / s as
+% sqrt(d * |2 - d|), exact when shat <= s (interlacing, up to rounding).
+% The pythagorean series cannot fall below about sqrt(2 * eps) ~ 2e-8 in double
+% precision: at rounding level it is the square root of a relative error.
 %
 % The residual metric uses the "correct" a-posteriori error estimator:
 %   sqrt(||E_left||^2 + ||E_right||^2)
@@ -64,7 +75,13 @@ function [] = abrik_accuracy_analysis(csv_path, options)
 
     % --- Read data (auto-detect legacy 5-col vs new 6-col layout) ---
     T_raw = readtable(csv_path, 'CommentStyle', '#');
-    if width(T_raw) == 10
+    if width(T_raw) == 13
+        % 2026-10-08: + raw singular values and Rob's pythagorean sval error.
+        T_raw.Properties.VariableNames = {'run', 'i', 'res_err_abrik', ...
+            'res_err_gesdd', 'sval_diff', 'svec_diff', ...
+            'res_sw_abrik', 'res_sw_gesdd', 'res_1s_abrik', 'res_1s_gesdd', ...
+            's_abrik', 's_gesdd', 'sval_pyth'};
+    elseif width(T_raw) == 10
         % b38ca8e (2026-08-03): + Rob/Tropp-Webber eq.(6.1) and Hartwig/Tomas
         % eq.(14) metric columns (C4 of abrik-paper-open-questions).
         T_raw.Properties.VariableNames = {'run', 'i', 'res_err_abrik', ...
@@ -79,6 +96,13 @@ function [] = abrik_accuracy_analysis(csv_path, options)
         T_raw.Properties.VariableNames = {'i', 'res_err_abrik', 'res_err_gesdd', ...
                                           'sval_diff', 'svec_diff'};
         T_raw.run = zeros(height(T_raw), 1);
+    end
+
+    if options.SvalMetric == "pythagorean"
+        if ~ismember('sval_pyth', T_raw.Properties.VariableNames)
+            T_raw.sval_pyth = sqrt(T_raw.sval_diff .* abs(2 - T_raw.sval_diff));
+        end
+        T_raw.sval_diff = T_raw.sval_pyth;
     end
 
     % Aggregate across runs: median per triplet i.
